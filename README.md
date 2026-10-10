@@ -1,79 +1,130 @@
 # MarketMind
 
-A Django web application for exploring historical stock prices, experimenting
-with price forecasts, and testing a simulated trading strategy. MarketMind is
-an educational project: it does not place real trades or provide investment
-advice.
+Explore stock-market history, experiment with possible price paths, and see how
+a simulated trading strategy behaves. **MarketMind** is a Django web app for
+learning and experimentation; it does not place real trades or provide
+investment advice.
 
-## Features
+## At a glance
 
-- **Market data:** Look up a supported US or Indian stock and view its recent
-  summary and historical closing-price chart.
-- **Price forecasts:** Generate experimental forecast paths using an LSTM when
-  TensorFlow is installed, or a Monte Carlo fallback otherwise.
-- **Trading simulator:** Run a historical, simulated trading strategy with a
-  configurable starting balance and trading delay.
-- **Accounts:** Register with a phone number verified by SMS OTP. Email is
-  optional at registration. Password reset uses an email OTP.
-- **Interactive charts:** Explore plotted results and point details in the
-  browser.
-- **Sign-in required:** The application redirects visitors to login before
-  showing the market tools.
-
-Supported symbols and periods are defined in
-[`Stock/backend/stockinfo.py`](Stock/backend/stockinfo.py). Market data is
-retrieved at request time from Yahoo Finance through `yfinance`, so availability
-and values depend on that external service.
+| | |
+| --- | --- |
+| Application | Django web application |
+| Market data | Yahoo Finance, through `yfinance` |
+| Markets in the symbol list | US and India |
+| Forecast methods | LSTM when TensorFlow is available; Monte Carlo fallback otherwise |
+| Charting | Matplotlib and `mpld3` |
+| Default database | SQLite |
+| Live trading | Not supported |
 
 ## Screenshots
 
-### Market overview
+The screenshots below show the current MarketMind interface and example
+results. Form values and chart results are illustrative, captured examples;
+market prices depend on the data provider and capture time.
+
+### MarketMind overview
 
 <p align="center">
-  <img src="assets/Main.PNG" alt="MarketMind overview" width="900">
+  <img src="assets/Main.PNG" alt="MarketMind overview and its three analysis tools" width="900">
 </p>
+
+### Explore historical market data
+
+Choose a listed symbol and time period to view a stock summary and closing-price
+chart.
+
+| Choose a symbol and period | Example summary and chart |
+| --- | --- |
+| <img src="assets/Info.PNG" alt="Market data search form" width="440"> | <img src="assets/Info-done.png" alt="Market data summary and six-month price chart" width="440"> |
+
+### Generate experimental price forecasts
+
+Choose a symbol and historical period, then set the number of paths and future
+horizon. Forecast charts illustrate model output; they are not guaranteed
+predictions or a validated measure of future accuracy.
+
+| Forecast settings | Example forecast chart |
+| --- | --- |
+| <img src="assets/Prediction.png" alt="Forecast settings form" width="440"> | <img src="assets/Prediction-done.png" alt="Example forecast paths and historical trend" width="440"> |
+
+### Run a historical trading simulation
+
+Choose a symbol and time period, starting balance, and trading delay. The
+simulator plots example buy and sell signals against historical prices; it
+does not connect to a broker.
+
+| Simulation settings | Example simulation chart |
+| --- | --- |
+| <img src="assets/Agent.png" alt="Trading simulation settings form" width="440"> | <img src="assets/Agent-done.png" alt="Historical price chart with simulated buy and sell signals" width="440"> |
+
+## What you can do
 
 ### Market data
 
-<p align="center">
-  <img src="assets/Info-done.png" alt="Historical market data and chart" width="900">
-</p>
+- Search the application's verified ticker list for US and Indian stocks.
+- Request a period from one day through maximum available history.
+- Review the returned company summary and an interactive closing-price chart.
+- Hover over chart points to inspect available date and price details.
 
-### Price forecast
+### Price forecasts
 
-<p align="center">
-  <img src="assets/Prediction-done.png" alt="Illustrative forecast chart" width="900">
-</p>
+- Choose a listed ticker and a supported historical period.
+- Run between **1 and 10** simulation paths.
+- Select a forecast horizon between **30 and 365 days**.
+- Use the LSTM implementation when TensorFlow is installed; otherwise, the
+  prediction module uses a Monte Carlo simulation based on historical returns.
 
-### Trading simulation
+The fallback and LSTM results are experimental scenarios, not investment
+recommendations. The project does not establish predictive performance through
+a rigorous out-of-sample evaluation.
 
-<p align="center">
-  <img src="assets/Agent-done.png" alt="Historical trading simulation chart" width="900">
-</p>
+### Trading simulator
 
-Screenshots and chart values are examples from their capture time; they are not
-live quotes or reproducible performance benchmarks.
+- Choose a listed ticker and a supported historical period.
+- Set a starting balance from **$1 to $100,000**.
+- Set a trading delay from **0 to 10 days**.
+- View the historical price series with simulated buy/sell signals and summary
+  values.
+
+This is a historical strategy experiment. It does not execute orders, include
+a brokerage connection, or guarantee that results would repeat.
+
+### Accounts and verification
+
+- Market pages require a signed-in account.
+- Registration uses SMS verification through Twilio. The phone number is
+  required; email is optional and is not verified during registration.
+- Password reset is sent to the account email using SMTP.
+- OTPs expire after five minutes. Requests are rate-limited and verification
+  attempts are limited.
+
+SMS and email delivery need valid service credentials; without them, codes
+cannot be delivered.
 
 ## Run locally
 
-### 1. Prerequisites
+### Requirements
 
 - Git
-- Python and `pip`
-- Network access for downloading market data
+- Python with `pip`
+- Network access to retrieve market data
+- Twilio credentials for SMS registration
+- SMTP credentials if you want to test email-based password reset
 
-The current development environment uses Python 3.12.10 and Django 3.1.13.
-Django 3.1 is end-of-life; use this project for local development and update
-and test its framework and dependencies before deployment.
+The current development setup uses Python 3.12.10 and Django 3.1.13. **Django
+3.1 is no longer supported upstream.** This repository is a development
+prototype; update and test the framework and dependencies before using it in a
+public deployment.
 
-### 2. Clone the repository
+### 1. Clone the project
 
 ```bash
 git clone https://github.com/gamepatt78/MarketMind.git
 cd MarketMind
 ```
 
-### 3. Create an environment and install application dependencies
+### 2. Create a virtual environment
 
 **Windows PowerShell**
 
@@ -81,7 +132,13 @@ cd MarketMind
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install Django==3.1.13 numpy pandas scikit-learn matplotlib mpld3 seaborn tqdm yfinance requests
+```
+
+If PowerShell blocks activation for this terminal, run:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\.venv\Scripts\Activate.ps1
 ```
 
 **macOS / Linux**
@@ -90,32 +147,41 @@ python -m pip install Django==3.1.13 numpy pandas scikit-learn matplotlib mpld3 
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
+```
+
+### 3. Install the application dependencies
+
+```bash
 python -m pip install Django==3.1.13 numpy pandas scikit-learn matplotlib mpld3 seaborn tqdm yfinance requests
 ```
 
-TensorFlow is optional. Install it if you want the LSTM forecast path; without
-it, the prediction module uses its Monte Carlo fallback:
+TensorFlow is optional. Install it to enable the LSTM forecast implementation;
+without TensorFlow, the forecast module falls back to Monte Carlo simulations.
+TensorFlow installation compatibility depends on the selected Python version
+and operating system.
 
 ```bash
 python -m pip install tensorflow
 ```
 
-The included `requirements.txt` is an old, environment-specific dependency
-snapshot rather than a minimal install manifest. The commands above install the
-packages used by the application.
+`requirements.txt` is an old environment-specific package snapshot and is not
+the recommended installation command for a fresh environment.
 
-### 4. Configure authentication services
+### 4. Configure SMS and email delivery
 
-Registration sends a phone verification code using Twilio. Set these variables
-in the server environment; keep the real values private and never commit them.
+Set service credentials as environment variables in the same environment where
+you run Django. Do not commit real credentials or paste them into issues or
+chat.
+
+**Required for registration SMS:**
 
 ```text
 TWILIO_ACCOUNT_SID=your-account-sid
 TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_FROM_PHONE=your-twilio-phone-number
+TWILIO_FROM_PHONE=your-twilio-number
 ```
 
-Email-based password reset also requires an SMTP service:
+**Required only for email password reset:**
 
 ```text
 EMAIL_HOST=smtp.example.com
@@ -126,62 +192,91 @@ EMAIL_USE_TLS=true
 DEFAULT_FROM_EMAIL=your-verified-sender@example.com
 ```
 
-Without valid Twilio settings, SMS registration codes cannot be delivered.
-Without valid SMTP settings, email password-reset codes cannot be delivered.
-Registration OTPs expire after five minutes and are rate-limited.
+For example, in PowerShell you can set values for the current terminal session:
 
-### 5. Set up the database and start Django
+```powershell
+$env:TWILIO_ACCOUNT_SID = "your-account-sid"
+$env:TWILIO_AUTH_TOKEN = "your-auth-token"
+$env:TWILIO_FROM_PHONE = "+15551234567"
+```
+
+Use your real Twilio-issued values locally; the example above is not a working
+credential.
+
+### 5. Create the database and start the server
 
 ```bash
 python manage.py migrate
 python manage.py runserver 127.0.0.1:8000
 ```
 
-Open <http://127.0.0.1:8000/>. Register an account after configuring SMS
-delivery, then sign in to use the market tools.
+Visit <http://127.0.0.1:8000/>. Register using a phone number that can receive
+SMS, verify the code, and then sign in.
 
-## Using the application
+## Supported symbols and periods
 
-1. **Market data:** Choose a supported symbol and period, then request its
-   historical chart.
-2. **AI predictions:** Choose a symbol and historical period, set 1–10
-   simulations and a forecast horizon of 30–365 days, then run the prediction.
-3. **Trading agent:** Choose a symbol and historical period, set the starting
-   balance and a trading delay from 0–10 days, then run the simulation.
+The ticker list is maintained in
+[`Stock/backend/stockinfo.py`](Stock/backend/stockinfo.py).
 
-Forecasts and strategy results are experiments over historical data. They do
-not predict future returns reliably and do not submit orders to a broker.
+| Market | Symbols |
+| --- | --- |
+| United States | `AAPL`, `MSFT`, `NVDA`, `GOOGL`, `AMZN`, `META`, `TSLA`, `JPM` |
+| India | `RELIANCE.NS`, `TCS.NS`, `HDFCBANK.NS`, `INFY.NS`, `ICICIBANK.NS`, `SBIN.NS`, `BHARTIARTL.NS`, `ITC.NS` |
+
+Available periods are `1d`, `5d`, `1mo`, `6mo`, `1y`, `5y`, and `max`. Data
+availability depends on Yahoo Finance and the selected symbol/period.
+
+## How it is structured
+
+1. A Django view validates the requested symbol, period, and form values.
+2. Backend modules retrieve price history from Yahoo Finance with `yfinance`.
+3. The prediction or simulation module processes the historical series and
+   builds a chart.
+4. Django renders the result in the browser with interactive chart output.
 
 ## Project layout
 
-| Path | Purpose |
+| Path | Responsibility |
 | --- | --- |
-| `Stock/` | Django application, views, templates, authentication, and migrations |
-| `Stock/backend/stockinfo.py` | Supported tickers, market-data retrieval, and charts |
-| `Stock/backend/predict.py` | Forecast generation |
-| `Stock/backend/trade.py` | Historical trading simulation |
-| `Stock/templates/` | Web interface |
-| `Stock/static/` | Stylesheets and static assets |
-| `StockMarket/` | Django project configuration |
-| `assets/` | Application screenshots and diagrams |
+| `manage.py` | Django management commands |
+| `Stock/` | Application views, account logic, tests, templates, and migrations |
+| `Stock/backend/stockinfo.py` | Supported symbols, market-data retrieval, and price charts |
+| `Stock/backend/predict.py` | LSTM and Monte Carlo forecast paths |
+| `Stock/backend/trade.py` | Historical evolution-strategy trading simulation |
+| `Stock/templates/` | Login, registration, market, prediction, and simulator pages |
+| `Stock/static/` | Application styles and static assets |
+| `StockMarket/` | Django project settings and URL configuration |
+| `assets/` | README screenshots and model diagrams |
 
-Academic report documents and report folders are intentionally not included in
-this GitHub repository.
+Academic report documents and report folders are intentionally kept out of
+this repository.
 
-## Security and deployment
+## Tests and checks
 
-This repository is a development prototype, not a production deployment
-configuration. The project currently has development settings, including
-`DEBUG = True` and an empty `ALLOWED_HOSTS`. Before deploying:
+Run the Django configuration check and application tests from the activated
+virtual environment:
 
-- turn off debug mode and configure allowed hosts and HTTPS;
-- set a unique, private `DJANGO_SECRET_KEY` and review all Django production
-  security settings;
-- configure and protect production database, Twilio, and SMTP credentials;
-- use a production WSGI/ASGI server instead of Django's development server;
-- review dependencies and add appropriate logging, monitoring, and rate limits.
+```bash
+python manage.py check
+python manage.py test Stock
+```
 
-Never commit passwords, API tokens, real OTPs, private environment files, or a
+## Security and deployment notes
+
+The checked-in settings are for development: `DEBUG` is enabled, `ALLOWED_HOSTS`
+is empty, and the default secret key is explicitly development-only. Before
+deployment:
+
+- set a unique, private `DJANGO_SECRET_KEY`;
+- disable debug mode and configure allowed hosts, HTTPS, and secure cookies;
+- use a production database and WSGI/ASGI server;
+- configure Twilio and SMTP credentials outside the repository;
+- review Django and third-party dependency versions, update unsupported
+  software, and test the changes;
+- add deployment-appropriate logging, monitoring, backup, and rate-limit
+  controls.
+
+Never commit passwords, API tokens, OTPs, `.env` files, session cookies, or a
 local database.
 
 ## License
