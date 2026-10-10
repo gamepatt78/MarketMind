@@ -1,116 +1,189 @@
-# Stock-Market-AI-GUI
-Stock Market Prediction &amp; Trading Bot using AI with a Web Interface
+# MarketMind
 
-## Stock Market Prediction using an LSTM Network
-Long Short Term Memory networks – usually just called “LSTMs” – are a special kind of RNN, capable of learning long-term dependencies. They were introduced by Hochreiter & Schmidhuber (1997), and were refined and popularized by many people in following work. They work tremendously well on a large variety of problems, and are now widely used. LSTMs are explicitly designed to avoid the vanishing gradient problem. 
+A Django web application for exploring historical stock prices, experimenting
+with price forecasts, and testing a simulated trading strategy. MarketMind is
+an educational project: it does not place real trades or provide investment
+advice.
+
+## Features
+
+- **Market data:** Look up a supported US or Indian stock and view its recent
+  summary and historical closing-price chart.
+- **Price forecasts:** Generate experimental forecast paths using an LSTM when
+  TensorFlow is installed, or a Monte Carlo fallback otherwise.
+- **Trading simulator:** Run a historical, simulated trading strategy with a
+  configurable starting balance and trading delay.
+- **Accounts:** Register with a phone number verified by SMS OTP. Email is
+  optional at registration. Password reset uses an email OTP.
+- **Interactive charts:** Explore plotted results and point details in the
+  browser.
+- **Sign-in required:** The application redirects visitors to login before
+  showing the market tools.
+
+Supported symbols and periods are defined in
+[`Stock/backend/stockinfo.py`](Stock/backend/stockinfo.py). Market data is
+retrieved at request time from Yahoo Finance through `yfinance`, so availability
+and values depend on that external service.
+
+## Screenshots
+
+### Market overview
 
 <p align="center">
-<img src="./assets/lstm_model.png" align="middle" />  </p>
+  <img src="assets/Main.PNG" alt="MarketMind overview" width="900">
+</p>
 
-All recurrent neural networks have the form of a chain of repeating modules of neural network. In standard RNNs, this repeating module will have a very simple structure, such as a single tanh layer. LSTMs also have this chain like structure, but the repeating module has a different structure. Instead of having a single neural network layer, there are four, interacting in a very special way.
-
-For more info check out this [article](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
-
-## Stock Market Agent using Evolution Strategy Agent
-
-Even though the name sounds fancy but under the hood, it’s perhaps the simplest algorithm you can devise for exploring a landscape. Consider an agent in an environment (like Pong) that’s implemented via a neural network. It takes pixels in the input layer and outputs probabilities of actions available to it (move the paddle up, down or do nothing).
+### Market data
 
 <p align="center">
-<img src="./assets/evolve_agent.png" align="middle" />  </p>
+  <img src="assets/Info-done.png" alt="Historical market data and chart" width="900">
+</p>
 
-Our task in reinforcement learning is to find the parameters (weights and biases) of the neural network (weights and biases) that make the agent win more often and hence get more rewards. 
+### Price forecast
 
-For more info check out this [article](https://towardsdatascience.com/reinforcement-learning-without-gradients-evolving-agents-using-genetic-algorithms-8685817d84f)
-
-## Requirements
-* Python 3.6.2 (https://www.python.org/downloads/release/python-362/)
-* Django (https://www.djangoproject.com/)
-* Numpy (https://pypi.org/project/numpy/)
-* Tensorflow (https://pypi.org/project/tensorflow/)
-* Keras (https://pypi.org/project/Keras/)
-* Seaborn (https://pypi.org/project/seaborn/)
-* Yahoo-Finance (https://pypi.org/project/yahoo-finance/)
-* Pandas (https://pypi.org/project/pandas/)
-* Matplotlib (https://pypi.org/project/matplotlib/)
-
-## Usage
-
-First start the django server using the following line,
-```
-python manage.py runserver
-```
-### Main Page
 <p align="center">
-<img src="./assets/Main.PNG" align="middle" />  </p>
+  <img src="assets/Prediction-done.png" alt="Illustrative forecast chart" width="900">
+</p>
 
-The main page gives you three options to choose from:
+### Trading simulation
 
-### 1. Stock Info
 <p align="center">
-<img src="./assets/Info.PNG" align="middle" />  </p>
-Just Input the Symbol of the Stock and the Duration for which to get the data and the data is fetched using the yahoo-finance library and graphed using matplotlib and mpld3.
-<p align="center">
-<img src="./assets/Info-done.png" align="middle" />  </p>
-The details are shown in the table and the closing prices are graphed. Hover your mouse over the points will give you a tooltip with the date and the closing price for that day.
+  <img src="assets/Agent-done.png" alt="Historical trading simulation chart" width="900">
+</p>
 
-### 2. Prediction
-<p align="center">
-<img src="./assets/Prediction.png" align="middle" />  </p>
-For the prediction you have to input the Symbol for the Stock, the Period of Data to train with, The Number of Simulations to run, and the Number of Future Days to predict for.
-<p align="center">
-<img src="./assets/Prediction-done.png" align="middle" />  </p>
-The closing prices of the simulations that are deemed acceptable is graphed using matplotlib and mpld3. Hover your mouse over the points will give you a tooltip with the date and the closing price for that day.
+Screenshots and chart values are examples from their capture time; they are not
+live quotes or reproducible performance benchmarks.
 
-### 3.Trading Agent
-<p align="center">
-<img src="./assets/Agent.png" align="middle" />  </p>
-For the trading agent you have to input the Symbol for the Stock, the Period of Data to trade on, The Initial Fund, and the Number of Days to Skip in between selling or buying.
-<p align="center">
-<img src="./assets/Agent-done.png" align="middle" />  </p>
-The closing prices is graphed and the selling and buying days are marked with their respective markers using matplotlib and mpld3. Hover your mouse over the marker to get the date and the action done on that day.
+## Run locally
 
+### 1. Prerequisites
 
-### 4. Docker usage:
-```
-docker build -t smag:latest . 
-./runOnceDocker.sh 
-python manage runserver
+- Git
+- Python and `pip`
+- Network access for downloading market data
+
+The current development environment uses Python 3.12.10 and Django 3.1.13.
+Django 3.1 is end-of-life; use this project for local development and update
+and test its framework and dependencies before deployment.
+
+### 2. Clone the repository
+
+```bash
+git clone https://github.com/gamepatt78/MarketMind.git
+cd MarketMind
 ```
 
-# G00D LUCK
+### 3. Create an environment and install application dependencies
 
-For doubts email me at:
-atinsaki@gmail.com
+**Windows PowerShell**
 
-## Email/mobile OTP accounts
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install Django==3.1.13 numpy pandas scikit-learn matplotlib mpld3 seaborn tqdm yfinance requests
+```
 
-Visitors are redirected to login before accessing the app. Registration collects
-a full name, username, phone number, optional email address, date of birth, and
-password. A six-digit OTP is sent to the phone by SMS; registration finishes
-after that code is verified, then returns to the login page instead of signing
-the new user in automatically. The optional email address is not verified and
-is not used for account recovery.
-Login uses the chosen username and password. Age is calculated from the stored
-date of birth.
+**macOS / Linux**
 
-Configure Twilio for registration SMS delivery:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install Django==3.1.13 numpy pandas scikit-learn matplotlib mpld3 seaborn tqdm yfinance requests
+```
+
+TensorFlow is optional. Install it if you want the LSTM forecast path; without
+it, the prediction module uses its Monte Carlo fallback:
+
+```bash
+python -m pip install tensorflow
+```
+
+The included `requirements.txt` is an old, environment-specific dependency
+snapshot rather than a minimal install manifest. The commands above install the
+packages used by the application.
+
+### 4. Configure authentication services
+
+Registration sends a phone verification code using Twilio. Set these variables
+in the server environment; keep the real values private and never commit them.
 
 ```text
 TWILIO_ACCOUNT_SID=your-account-sid
 TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_FROM_PHONE=your-twilio-number
+TWILIO_FROM_PHONE=your-twilio-phone-number
 ```
 
-Keep these credentials private and set them in the server environment. OTPs
-expire after five minutes, have a five-attempt limit, and are rate-limited.
-Apply the authentication database migration with `python manage.py migrate`.
-Live registration requires valid Twilio credentials; the app does not print
-codes to the server console.
+Email-based password reset also requires an SMTP service:
 
-### Forgot password
+```text
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your-smtp-username
+EMAIL_HOST_PASSWORD=your-smtp-password
+EMAIL_USE_TLS=true
+DEFAULT_FROM_EMAIL=your-verified-sender@example.com
+```
 
-On the login page choose **Forgot your password?**, enter the account email,
-and submit the email OTP together with a strong new password and its
-confirmation. On success, the app returns to login and displays a password
-changed confirmation. Password reset codes expire after five minutes and are
-rate-limited like registration codes.
+Without valid Twilio settings, SMS registration codes cannot be delivered.
+Without valid SMTP settings, email password-reset codes cannot be delivered.
+Registration OTPs expire after five minutes and are rate-limited.
+
+### 5. Set up the database and start Django
+
+```bash
+python manage.py migrate
+python manage.py runserver 127.0.0.1:8000
+```
+
+Open <http://127.0.0.1:8000/>. Register an account after configuring SMS
+delivery, then sign in to use the market tools.
+
+## Using the application
+
+1. **Market data:** Choose a supported symbol and period, then request its
+   historical chart.
+2. **AI predictions:** Choose a symbol and historical period, set 1–10
+   simulations and a forecast horizon of 30–365 days, then run the prediction.
+3. **Trading agent:** Choose a symbol and historical period, set the starting
+   balance and a trading delay from 0–10 days, then run the simulation.
+
+Forecasts and strategy results are experiments over historical data. They do
+not predict future returns reliably and do not submit orders to a broker.
+
+## Project layout
+
+| Path | Purpose |
+| --- | --- |
+| `Stock/` | Django application, views, templates, authentication, and migrations |
+| `Stock/backend/stockinfo.py` | Supported tickers, market-data retrieval, and charts |
+| `Stock/backend/predict.py` | Forecast generation |
+| `Stock/backend/trade.py` | Historical trading simulation |
+| `Stock/templates/` | Web interface |
+| `Stock/static/` | Stylesheets and static assets |
+| `StockMarket/` | Django project configuration |
+| `assets/` | Application screenshots and diagrams |
+
+Academic report documents and report folders are intentionally not included in
+this GitHub repository.
+
+## Security and deployment
+
+This repository is a development prototype, not a production deployment
+configuration. The project currently has development settings, including
+`DEBUG = True` and an empty `ALLOWED_HOSTS`. Before deploying:
+
+- turn off debug mode and configure allowed hosts and HTTPS;
+- set a unique, private `DJANGO_SECRET_KEY` and review all Django production
+  security settings;
+- configure and protect production database, Twilio, and SMTP credentials;
+- use a production WSGI/ASGI server instead of Django's development server;
+- review dependencies and add appropriate logging, monitoring, and rate limits.
+
+Never commit passwords, API tokens, real OTPs, private environment files, or a
+local database.
+
+## License
+
+See [`LICENSE`](LICENSE).
