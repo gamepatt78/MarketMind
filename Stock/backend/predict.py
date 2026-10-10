@@ -1,6 +1,8 @@
 import sys
 import warnings
 import numpy as np
+import matplotlib
+matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt
 import mpld3
 import seaborn as sns
@@ -8,13 +10,22 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime, timedelta
 from tqdm import tqdm
-import tensorflow as tf
-from tensorflow.keras import layers
+try:
+    import tensorflow as tf
+    from tensorflow.keras import layers
+    HAS_TF = True
+except Exception:
+    tf = None
+    layers = None
+    HAS_TF = False
 import yfinance as yf
 import os
 
+from Stock.backend.stockinfo import align_plot_series
+
 sns.set()
-tf.random.set_seed(1234)
+if HAS_TF:
+    tf.random.set_seed(1234)
 
 num_layers = 1
 size_layer = 128
@@ -30,15 +41,91 @@ def predict_stock(symbol, period, sim, future):
     test_size = future
 
     df = yf.download(symbol, period=period, interval="1d")
+    if df is None or df.empty:
+        raise ValueError(
+            "Market data is temporarily unavailable for this stock and period. Please try again."
+        )
     df.reset_index(inplace=True)
     df.to_csv("data.csv")
     df = pd.read_csv("data.csv")
     df = df.iloc[1:].drop(columns="Price")
     minmax = MinMaxScaler()
+    if "Close" not in df or df["Close"].dropna().empty:
+        raise ValueError(
+            "Market data is temporarily unavailable for this stock and period. Please try again."
+        )
     df_log = minmax.fit_transform(df[["Close"]])
     df_log = pd.DataFrame(df_log, columns=["Close"])
 
     df_train = df_log
+
+    # If TensorFlow is not available, use a lightweight Monte Carlo fallback
+    if not HAS_TF:
+        # Prepare numeric Close values
+        df["Close"] = pd.to_numeric(df["Close"], errors="coerce").dropna()
+        prices = df["Close"].values
+        last_price = prices[-1]
+        returns = pd.Series(prices).pct_change().dropna()
+        mu = returns.mean()
+        sigma = returns.std()
+
+        def mc_simulation():
+            sims = []
+            for _ in range(simulation_size):
+                # simulate future returns
+                future_returns = np.random.normal(mu, sigma, test_size)
+                sim_prices = last_price * np.cumprod(1 + future_returns)
+                # prepend historical prices for plotting alignment
+                combined = np.concatenate([prices, sim_prices])
+                sims.append(combined.tolist())
+            return sims
+
+        results = mc_simulation()
+
+        # Build date index including future days
+        date_ori = pd.to_datetime(df.iloc[:, 0]).tolist()
+        for i in range(test_size):
+            date_ori.append(date_ori[-1] + timedelta(days=1))
+        date_ori = pd.Series(date_ori).dt.strftime(date_format="%Y-%m-%d").tolist()
+
+        # Plot results
+        plt.figure(figsize=(11, 5))
+        for no, r in enumerate(results):
+            plot_dates, plot_values = align_plot_series(date_ori[::5], r[::5])
+            labels = [
+                f"<table style='border: 1px solid black; font-weight:bold; font-size:larger; background-color:white'><tr style='border: 1px solid black;'><th style='border: 1px solid black;'>Date:</th><td style='border: 1px solid black;'>{x}</td></tr><tr style='border: 1px solid black;'><th style='border: 1px solid black;'>Close:</th><td style='border: 1px solid black;'>{round(y,2)}</td></tr></table>"
+                for x, y in zip(plot_dates, plot_values)
+            ]
+            lines = plt.plot(plot_dates, plot_values, label=f"forecast {no + 1}", marker="*")
+            tooltips = mpld3.plugins.PointHTMLTooltip(lines[0], labels=labels, voffset=10, hoffset=10)
+            mpld3.plugins.connect(plt.gcf(), tooltips)
+
+        historical_dates, historical_prices = align_plot_series(
+            df.iloc[:, 0].tolist()[::5], df["Close"].tolist()[::5]
+        )
+        true_trend = plt.plot(
+            historical_dates, historical_prices, label="true trend", c="black", marker="*",
+        )[0]
+        labels_true = [
+            f"<table style='border: 1px solid black; font-weight:bold; font-size:larger; background-color:white'><tr style='border: 1px solid black;'><th style='border: 1px solid black;'>Date:</th><td style='border: 1px solid black;'>{y}</td></tr><tr style='border: 1px solid black;'><th style='border: 1px solid black;'>Close:</th><td style='border: 1px solid black;'>{round(x,2)}</td></tr></table>"
+            for x, y in zip(historical_prices, historical_dates)
+        ]
+        tooltips_true = mpld3.plugins.PointHTMLTooltip(true_trend, labels=labels_true, voffset=10, hoffset=10)
+        mpld3.plugins.connect(plt.gcf(), tooltips_true)
+
+        plt.legend()
+        plt.title(f"Stock: {symbol} (fallback) - Monte Carlo simulations: {simulation_size}")
+        ax = plt.gca()
+        ax.set_facecolor("white")
+        plt.xticks([])
+        plt.autoscale(enable=True, axis="both", tight=None)
+        try:
+            os.remove("data.csv")
+        except Exception:
+            pass
+        html = mpld3.fig_to_html(plt.gcf())
+        plt.close()
+        return html
 
     class Model(tf.keras.Model):
         def __init__(self, learning_rate, num_layers, size_layer, output_size):
@@ -158,26 +245,30 @@ def predict_stock(symbol, period, sim, future):
 
     plt.figure(figsize=(11, 5))
     for no, r in enumerate(accepted_results):
+        plot_dates, plot_values = align_plot_series(date_ori[::5], r[::5])
         labels = [
             f"<table style='border: 1px solid black; font-weight:bold; font-size:larger; background-color:white'><tr style='border: 1px solid black;'><th style='border: 1px solid black;'>Date:</th><td style='border: 1px solid black;'>{x}</td></tr><tr style='border: 1px solid black;'><th style='border: 1px solid black;'>Close:</th><td style='border: 1px solid black;'>{round(y,2)}</td></tr></table>"
-            for x, y in zip(date_ori[::5], r[::5])
+            for x, y in zip(plot_dates, plot_values)
         ]
-        lines = plt.plot(date_ori[::5], r[::5], label=f"forecast {no + 1}", marker="*")
+        lines = plt.plot(plot_dates, plot_values, label=f"forecast {no + 1}", marker="*")
         tooltips = mpld3.plugins.PointHTMLTooltip(
             lines[0], labels=labels, voffset=10, hoffset=10
         )
         mpld3.plugins.connect(plt.gcf(), tooltips)
 
+    historical_dates, historical_prices = align_plot_series(
+        df.iloc[:, 0].tolist()[::5], df["Close"].tolist()[::5]
+    )
     true_trend = plt.plot(
-        df.iloc[:, 0].tolist()[::5],
-        df["Close"][::5],
+        historical_dates,
+        historical_prices,
         label="true trend",
         c="black",
         marker="*",
     )[0]
     labels_true = [
         f"<table style='border: 1px solid black; font-weight:bold; font-size:larger; background-color:white'><tr style='border: 1px solid black;'><th style='border: 1px solid black;'>Date:</th><td style='border: 1px solid black;'>{y}</td></tr><tr style='border: 1px solid black;'><th style='border: 1px solid black;'>Close:</th><td style='border: 1px solid black;'>{round(x,2)}</td></tr></table>"
-        for x, y in zip(df["Close"].tolist()[::5], df.iloc[:, 0].tolist()[::5])
+        for x, y in zip(historical_prices, historical_dates)
     ]
     tooltips_true = mpld3.plugins.PointHTMLTooltip(
         true_trend, labels=labels_true, voffset=10, hoffset=10

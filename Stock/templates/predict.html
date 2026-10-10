@@ -1,60 +1,59 @@
 {% extends "template.html" %}
-{% block heading %}
-MAIN
-{% endblock %}
-
-
+{% block heading %}AI predictions | MarketMind{% endblock %}
 {% block body %}
-<div class="container" style="color: black;">
+<div class="container">
 <div class="row justify-content-center">
-<div class="shadow-lg p-3 mb-5 bg-white rounded" style="width: 70rem; background-color: ghostwhite;">
-    <form style="margin-top: 40px;" action="/predict" method="POST">
+<section class="shadow-lg market-tool-card">
+    <div class="tool-heading">
+        <span class="eyebrow">AI-POWERED ANALYSIS</span>
+        <h1>Stock predictions</h1>
+        <p>Configure a simulation to explore potential future price scenarios. Results are estimates, not guarantees.</p>
+    </div>
+    <form id="prediction-form" action="/predict" method="POST">
         {% csrf_token %}
         <input name="action" required readonly hidden value="add_card">
-        <img class="mb-4" src="../static/assets/logo.png" alt="" height="96">
-        <h1 class="h1 mb-1 font-weight-bold" style="font-size: 40px;">Stock Predictor</h1>
-        <hr style="border: 3px solid rgb(0, 0, 167);">
-        <div class="form-group" style="font-size: 30px; font-weight: bolder;">
-            <label class="text">Stock Symbol: </label>
-            <div class="alert alert-danger" id="error" role="alert" style="font-size: large;" hidden>
+        <div class="form-group">
+            <label class="text" for="symbol">Stock symbol</label>
+            <div class="alert alert-danger" id="error" role="alert" hidden>
             </div>
-            <input list="symbols" class="form-control" name="symbol" id="symbol" value="{{sym}}">
+            <input list="symbols" class="form-control" name="symbol" id="symbol" value="{{sym}}" placeholder="Search by ticker symbol" autocomplete="off" required>
             <datalist id="symbols">
                 {% for s in symbols %}
                     <option value="{{s.symbol}}">{{s.name}}</option>  
                 {% endfor %}
             </datalist>
+            <small class="symbol-help">Choose from data-verified US and Indian stocks and periods.</small>
         </div>
-        <div class="form-group" style="font-size: 30px; font-weight: bolder;">
-        <label class="text">Time Period: </label>
-        <select class="form-control" name="period" id="period" data-toggle="popover">
+        <div class="form-group">
+        <label class="text" for="period">Historical period</label>
+        <select class="form-control" name="period" id="period">
             <option value="6mo" selected>Past 6 Months</option>
             <option value="1y">Past Year</option>
             <option value="5y">Past 5 Years</option>
             <option value="max">Maximum Duration</option>
         </select>
         </div>
-        <div class="form-group" style="font-size: 30px; font-weight: bolder;">
-            <label class="text">No of Simulations: </label>
-            <input class="form-control" name="no_sim" id="sim" type="number" min=1 max=10 value="5">
+        <div class="form-group">
+            <label class="text" for="sim">Number of simulations</label>
+            <input class="form-control" name="no_sim" id="sim" type="number" min="1" max="10" value="5">
         </div>
-        <div class="form-group" style="font-size: 30px; font-weight: bolder;">
-            <label class="text">No of Future Days: </label>
-            <div class="alert alert-danger" id="error2" role="alert" style="font-size: large;" hidden>
+        <div class="form-group">
+            <label class="text" for="days">Future period in days</label>
+            <div class="alert alert-danger" id="error2" role="alert" hidden>
             </div>
-            <input class="form-control" name="no_days" id="days" type="number" min=30 max=365 value="30">
+            <input class="form-control" name="no_days" id="days" type="number" min="30" max="365" value="30">
         </div>
         <textarea hidden id="plot" name="plot"></textarea>  
-        <input class="btn btn-lg btn-primary btn-block" onclick="check();" value="Predict Prices"> 
+        <button class="btn btn-lg btn-primary" type="button" onclick="check();">Run prediction <span aria-hidden="true">→</span></button>
     </form>
     
-    <img src="../static/assets/load.gif" height="200px" id="load" hidden style="margin-top: 50px;">
+    <div class="loading-state" id="load" hidden><img src="/static/assets/load.gif" alt=""><span>Running your simulation…</span></div>
     <div id="graph">
     {% if data != None %}
         {{data |safe}}
     {% endif %}
     </div>
-</div>
+</section>
 </div>
 </div>
 <script>
@@ -72,29 +71,39 @@ MAIN
             dataType: 'json',
             success: function(result){
                 document.querySelector("#plot").value = result.data; 
-                document.querySelector("form").submit();
+                document.querySelector("#prediction-form").submit();
+            },
+            error: function(xhr){
+                load.hidden = true;
+                const message = xhr.responseJSON && xhr.responseJSON.error
+                    ? xhr.responseJSON.error
+                    : "Unable to fetch stock data. Please try again.";
+                const errorMessage = document.createElement("p");
+                errorMessage.className = "alert alert-danger";
+                errorMessage.textContent = message;
+                document.querySelector("#graph").replaceChildren(errorMessage);
             }
         });
     }
     function check() {
         var val = $("#symbol").val();
-        var obj = $("#symbols").find("option[value='" + val + "']");
+        var obj = Array.from(document.querySelector("#symbols").options)
+            .some(function(option) { return option.value === val.trim().toUpperCase(); });
         const error = document.querySelector("#error");
-        if(obj != null && obj.length > 0) {
-        }
-        else {
-            error.innerHTML = "Select a Valid Symbol";
+        if (!obj) {
+            error.textContent = "Select a valid stock symbol from the suggestions.";
             error.hidden = false;
             return false;
         }
+        error.hidden = true;
         const error2 = document.querySelector("#error2");
-        var val = $("#days").val();
-        if(val>365){
+        var futureDays = Number($("#days").val());
+        if(futureDays > 365 || futureDays < 30 || !Number.isInteger(futureDays)){
+            error2.textContent = "Choose a future period from 30 to 365 days.";
+            error2.hidden = false;
             return false;
         }
-        else if(val<30){
-            return false;
-        }
+        error2.hidden = true;
         get();
     };
     document.querySelector("#sim").oninput = function() {

@@ -7,32 +7,46 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import mpld3
-import os
-import pickle
 import numpy as np
 
 
-def get_symbols():
-    """Get list of stock symbols from pickle file."""
-    module_dir = os.path.dirname(__file__)
-    file_path = os.path.join(module_dir, "all_symbols.pkl")
-    with open(file_path, "rb") as file:
-        symbols = pickle.load(file)
-    return symbols
+indian_symbols = [
+    {"symbol": "RELIANCE.NS", "name": "Reliance Industries Limited"},
+    {"symbol": "TCS.NS", "name": "Tata Consultancy Services Limited"},
+    {"symbol": "HDFCBANK.NS", "name": "HDFC Bank Limited"},
+    {"symbol": "INFY.NS", "name": "Infosys Limited"},
+    {"symbol": "ICICIBANK.NS", "name": "ICICI Bank Limited"},
+    {"symbol": "SBIN.NS", "name": "State Bank of India"},
+    {"symbol": "BHARTIARTL.NS", "name": "Bharti Airtel Limited"},
+    {"symbol": "ITC.NS", "name": "ITC Limited"},
+]
+us_symbols = [
+    {"symbol": "AAPL", "name": "Apple Inc."},
+    {"symbol": "MSFT", "name": "Microsoft Corporation"},
+    {"symbol": "NVDA", "name": "NVIDIA Corporation"},
+    {"symbol": "GOOGL", "name": "Alphabet Inc."},
+    {"symbol": "AMZN", "name": "Amazon.com, Inc."},
+    {"symbol": "META", "name": "Meta Platforms, Inc."},
+    {"symbol": "TSLA", "name": "Tesla, Inc."},
+    {"symbol": "JPM", "name": "JPMorgan Chase & Co."},
+]
+supported_symbols = us_symbols + indian_symbols
+supported_symbol_tickers = frozenset(item["symbol"] for item in supported_symbols)
+supported_periods = frozenset(("1d", "5d", "1mo", "6mo", "1y", "5y", "max"))
 
 
-all_symbols = get_symbols()
+def align_plot_series(x_values, y_values):
+    """Keep chart coordinates paired when data preparation changes either series length."""
+    length = min(len(x_values), len(y_values))
+    return x_values[:length], y_values[:length]
 
 
 def get_stock_data(symbol, period="1d", interval=None):
     """Fetch stock data from Yahoo Finance."""
     try:
-        if period == "5d":
-            interval = "5m"
-        elif period == "1mo":
-            interval = "90m"
+        interval = interval or "1d"
         df = yf.download(symbol, period=period, interval=interval)
-        return df
+        return None if df is None or df.empty else df
     except Exception as e:
         print(f"Error fetching data for {symbol}: {str(e)}")
         return None
@@ -43,7 +57,12 @@ def process_stock_data(df, period):
     if df is None or df.empty:
         return None, None
 
-    close = df["Close"].round(2).tolist()
+    close_data = df["Close"]
+    if isinstance(close_data, pd.DataFrame):
+        close_data = close_data.iloc[:, 0]
+    close = close_data.dropna().round(2).tolist()
+    if not close:
+        return None, None
     date_ori = pd.to_datetime(df.index).strftime("%Y-%m-%d %H:%M")
 
     # Resample data for different periods
@@ -56,7 +75,12 @@ def process_stock_data(df, period):
     else:
         df_resampled = df
 
-    close_resampled = df_resampled["Close"].round(2).tolist()
+    close_data = df_resampled["Close"]
+    if isinstance(close_data, pd.DataFrame):
+        close_data = close_data.iloc[:, 0]
+    close_resampled = close_data.dropna().round(2).tolist()
+    if not close_resampled:
+        return None, None
     date_resampled = pd.to_datetime(df_resampled.index).strftime("%Y-%m-%d %H:%M")
 
     return date_resampled, close_resampled
@@ -84,6 +108,9 @@ def create_tooltip_labels(dates, values):
 
 def plot_stock(date_ori, close, symbol, period=None, title=None):
     """Create interactive stock plot with tooltips."""
+    date_ori, close = align_plot_series(date_ori, close)
+    if len(date_ori) == 0 or len(close) == 0:
+        return None
     fig, ax = plt.subplots(figsize=(11, 5))
     lines = plt.plot(
         date_ori, close, marker="*", mec="w", mfc="blue", label="Close", c="lightblue"
@@ -110,16 +137,21 @@ def plot_stock(date_ori, close, symbol, period=None, title=None):
 
 
 def stock_today(symbol):
-    """Get today's stock data and plot."""
-    df = get_stock_data(symbol, period="1d", interval="1m")
+    """Plot the latest available daily trading session."""
+    df = get_stock_data(symbol, period="1d", interval="1d")
     if df is None:
         return None
 
     # Access the 'Close' prices for the specific ticker
-    close = df["Close"][symbol].round(2).tolist()
+    close_data = df["Close"]
+    if isinstance(close_data, pd.DataFrame):
+        close_data = close_data.iloc[:, 0]
+    close = close_data.dropna().round(2).tolist()
+    if not close:
+        return None
     date_ori = pd.to_datetime(df.index).strftime("%Y-%m-%d %H:%M")
 
-    title = f"Stock: {symbol} Date: {datetime.now().strftime('%d/%m/%Y')}"
+    title = f"Stock: {symbol} Latest Trading Session: {date_ori[-1]}"
     return plot_stock(date_ori, close, symbol, title=title)
 
 
@@ -147,8 +179,10 @@ def get_info(symbol):
 
         stock_info = {
             "symbol": symbol,
+            "currency": "₹" if symbol.endswith(".NS") else "$",
             "name": next(
-                (s["name"] for s in all_symbols if s["symbol"] == symbol), "Unknown"
+                (item["name"] for item in supported_symbols if item["symbol"] == symbol),
+                "Unknown",
             ),
             "close": round(hist["Close"].iloc[-1], 2),
             "open": round(hist["Open"].iloc[-1], 2),

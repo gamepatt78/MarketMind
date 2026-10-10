@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+db.sqlite3
+
+.env
+.env.*
+!.env.example
+cookie.txt
+cookies.txt
+
+project_report/
+report_reference/
+Sample_project-report back/
+*.pdf
+*.docx
+*.pptx

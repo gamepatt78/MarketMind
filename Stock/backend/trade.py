@@ -1,18 +1,23 @@
 import numpy as np
 import pandas as pd
 import time
+import matplotlib
+matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt, mpld3
 import random
-import pkg_resources
 import types
-import os
-from pandas_datareader import data as pdr
 
 import yfinance as yf
 
+from Stock.backend.stockinfo import align_plot_series
+
+
 def trade_stock(symbol, period, init, skip):
-    yf.pdr_override() 
-    df = pdr.get_data_yahoo(symbol, period=period)
+    df = yf.download(symbol, period=period, interval="1d", progress=False)
+    if df is None or df.empty:
+        raise ValueError(
+            "Market data is temporarily unavailable for this stock and period. Please try again."
+        )
 
     class Deep_Evolution_Strategy:
         inputs = None
@@ -176,11 +181,17 @@ def trade_stock(symbol, period, init, skip):
             total_gains = initial_money - starting_money
             return states_buy, states_sell, total_gains, invest
 
-    close = df.Close.values.tolist()
-    df.to_csv('data.csv')
-    df = pd.read_csv('data.csv')
-    date_ori = pd.to_datetime(df.iloc[:, 0]).tolist()
+    close_data = df["Close"]
+    if isinstance(close_data, pd.DataFrame):
+        close_data = close_data.iloc[:, 0]
+    close = pd.to_numeric(close_data, errors="coerce").dropna().tolist()
+    if not close:
+        raise ValueError(
+            "Market data is temporarily unavailable for this stock and period. Please try again."
+        )
+    date_ori = pd.to_datetime(df.index).tolist()
     date_ori = pd.Series(date_ori).dt.strftime(date_format = '%Y-%m-%d').tolist()
+    date_ori, close = align_plot_series(date_ori, close)
     window_size = 30
     initial_money = init
     model = Model(input_size = window_size, layer_size = 500, output_size = 3)
@@ -253,7 +264,6 @@ def trade_stock(symbol, period, init, skip):
     plt.title('Stock: %s Total Gains: %f, Total Investment: %f%%'%(symbol, total_gains, invest))
     plt.legend(fontsize="large")
     html = mpld3.fig_to_html(fig)
-    os.remove("data.csv")
     return html
 
     

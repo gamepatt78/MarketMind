@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '+#r*idv#l3*o352&*z#v)ud#i!7rdj&y=$$v^x3#gr_ekl&b%6'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "development-only-insecure-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -48,6 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'Stock.middleware.LoginRequiredMiddleware',
 ]
 
 ROOT_URLCONF = 'StockMarket.urls'
@@ -98,6 +99,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'Stock.password_validators.MixedCharacterPasswordValidator',
+    },
 ]
 
 
@@ -121,3 +125,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login"
+
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_FROM_PHONE = os.environ.get("TWILIO_FROM_PHONE", "")

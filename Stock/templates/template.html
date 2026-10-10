@@ -1,55 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-    <head>
-        <title>{% block heading %}{% endblock %}</title>
-        <link rel="icon" href="../static/assets/logo.png">
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <!-- Bootstrap CSS -->
-        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-        <!--Custom Stylesheet-->
-        <link rel="stylesheet" href="../../static/css/styles.css">
-    </head>
-    <body class="text-center">
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="/" id="home">
-                <img src="../../static/assets/logo.png" height="30" class="d-inline-block align-top" alt="" loading="lazy">
-                <img src="../../static/assets/title.png" height="30" class="d-inline-block align-top" alt="" loading="lazy">
-            </a>
-            <ul class="nav navbar-nav center-nav">
-                <li class="nav-item active">{% block name %}{% endblock %}</li>
-         </ul>
-            <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav ml-auto">
-                    <li class="nav-item active">
-                        <a class="nav-link" id="cart" href="/cart">{% block cart %}{% endblock %}</a>
-                    </li>
-                    <li class="nav-item active">
-                        <a class="nav-link" id="orders" href="/orders">{% block order %}{% endblock %}</a>
-                    </li>
-                    <li class="nav-item active">
-                        <a class="nav-link" id="logout" href="/logout">{% block log %}{% endblock %}</a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-        <div class="container">
-        <div class="row justify-content-md-center">
-        <div class="d-flex justify-content-center">
-            {% block body %}
-            {% endblock %}
+  <head>
+    <title>{% block heading %}{% endblock %}</title>
+    <link rel="icon" href="../static/assets/logo.png" />
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <!-- Bootstrap CSS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+      integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+      crossorigin="anonymous"
+    ></script>
+    <!--Custom Stylesheet-->
+    <link rel="stylesheet" href="/static/css/styles.css?v=4" />
+  </head>
+  <body class="{% if mode %}auth-page{% else %}app-page{% endif %}">
+    {% if not mode %}
+    <nav class="app-topbar">
+      <div class="app-topbar-inner">
+        <a class="app-brand" href="/" id="home">
+          <img src="/static/assets/logo.png" alt="" width="36" height="36">
+          <span>Market<span>Mind</span></span>
+        </a>
+        {% if user.is_authenticated %}
+        <div class="app-nav" aria-label="Main navigation">
+          <a href="/" class="app-nav-link">Overview</a>
+          <a href="/stock" class="app-nav-link">Market data</a>
+          <a href="/predict" class="app-nav-link">AI predictions</a>
+          <a href="/trade" class="app-nav-link">Trading agent</a>
         </div>
+        <div class="app-account">
+          <span class="app-account-name">{{ user.username }}</span>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="app-logout" id="logout" type="submit">Log out</button>
+          </form>
         </div>
+        {% else %}
+        <div class="app-account">
+          <a class="app-account-link" href="{% url 'login' %}">Log in</a>
+          <a class="app-logout" href="{% url 'register' %}">Register</a>
         </div>
-        <footer id="footer">
-            <div class="footer">
-                <span>Author: Atin Sakkeer Hussain</span>
-            </div>
-        </footer>
-        {% block script %}
-        {% endblock %}
-    </body>
+        {% endif %}
+      </div>
+    </nav>
+    {% endif %}
+    {% if mode %}
+    <div class="auth-container">
+    {% else %}
+    <main class="app-main">
+    {% endif %}
+    {% block body %}{% endblock %}
+    {% if not mode %}
+    </main>
+    {% endif %}
+    {% if not mode %}
+    <footer class="app-footer">
+      <span>MarketMind <span class="app-footer-muted">· Market insights and AI tools</span></span>
+    </footer>
+    {% endif %}
+    {% block script %} {% endblock %}
+  </body>
 </html>
