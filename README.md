@@ -36,7 +36,7 @@ chart.
 
 | Choose a symbol and period | Example summary and chart |
 | --- | --- |
-| <img src="assets/Info.PNG" alt="Market data search form" width="440"> | <img src="assets/Info-done.png" alt="Market data summary and six-month price chart" width="440"> |
+| <img src="assets/Info.PNG" alt="Market data search form" width="500"> | <img src="assets/Info-done.png" alt="Market data summary and six-month price chart" width="500"> |
 
 ### Generate experimental price forecasts
 
@@ -46,7 +46,7 @@ predictions or a validated measure of future accuracy.
 
 | Forecast settings | Example forecast chart |
 | --- | --- |
-| <img src="assets/Prediction.png" alt="Forecast settings form" width="440"> | <img src="assets/Prediction-done.png" alt="Example forecast paths and historical trend" width="440"> |
+| <img src="assets/Prediction.png" alt="Forecast settings form" width="500"> | <img src="assets/Prediction-done.png" alt="Example forecast paths and historical trend" width="500"> |
 
 ### Run a historical trading simulation
 
@@ -56,7 +56,7 @@ does not connect to a broker.
 
 | Simulation settings | Example simulation chart |
 | --- | --- |
-| <img src="assets/Agent.png" alt="Trading simulation settings form" width="440"> | <img src="assets/Agent-done.png" alt="Historical price chart with simulated buy and sell signals" width="440"> |
+| <img src="assets/Agent.png" alt="Trading simulation settings form" width="500"> | <img src="assets/Agent-done.png" alt="Historical price chart with simulated buy and sell signals" width="500"> |
 
 ## What you can do
 
