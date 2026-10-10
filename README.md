@@ -25,20 +25,18 @@ market prices depend on the data provider and capture time.
 
 ### MarketMind overview
 
-![Current MarketMind overview with links to market data, price forecasts, and the trading simulator](./assets/readme-screenshots/overview.png)
+<p align="center">
+  <img src="assets/Main.PNG" alt="MarketMind overview and its three analysis tools" width="900">
+</p>
 
 ### Explore historical market data
 
 Choose a listed symbol and time period to view a stock summary and closing-price
 chart.
 
-**1. Select a symbol and period**
-
-![Market data form with AAPL and the six-month period selected](./assets/readme-screenshots/market-data-form.png)
-
-**2. Review the returned company summary and historical chart**
-
-![AAPL company summary and six-month historical closing-price chart](./assets/readme-screenshots/market-data-result.png)
+| Choose a symbol and period | Example summary and chart |
+| --- | --- |
+| <img src="assets/Info.PNG" alt="Market data search form" width="440"> | <img src="assets/Info-done.png" alt="Market data summary and six-month price chart" width="440"> |
 
 ### Generate experimental price forecasts
 
@@ -46,13 +44,9 @@ Choose a symbol and historical period, then set the number of paths and future
 horizon. Forecast charts illustrate model output; they are not guaranteed
 predictions or a validated measure of future accuracy.
 
-**1. Configure the forecast**
-
-![Forecast form with a six-month history, two simulation paths, and a 30-day horizon](./assets/readme-screenshots/forecast-form.png)
-
-**2. Compare forecast paths with the historical trend**
-
-![Example forecast chart comparing simulated paths with the historical trend](./assets/readme-screenshots/forecast-result.png)
+| Forecast settings | Example forecast chart |
+| --- | --- |
+| <img src="assets/Prediction.png" alt="Forecast settings form" width="440"> | <img src="assets/Prediction-done.png" alt="Example forecast paths and historical trend" width="440"> |
 
 ### Run a historical trading simulation
 
@@ -60,13 +54,9 @@ Choose a symbol and time period, starting balance, and trading delay. The
 simulator plots example buy and sell signals against historical prices; it
 does not connect to a broker.
 
-**1. Set the simulation inputs**
-
-![Trading simulator form with a six-month history, 10000 dollar starting balance, and two-day delay](./assets/readme-screenshots/trading-form.png)
-
-**2. Inspect the simulated trade signals**
-
-![Historical price chart with simulated buy and sell markers](./assets/readme-screenshots/trading-result.png)
+| Simulation settings | Example simulation chart |
+| --- | --- |
+| <img src="assets/Agent.png" alt="Trading simulation settings form" width="440"> | <img src="assets/Agent-done.png" alt="Historical price chart with simulated buy and sell signals" width="440"> |
 
 ## What you can do
 
@@ -256,7 +246,7 @@ availability depends on Yahoo Finance and the selected symbol/period.
 | `Stock/templates/` | Login, registration, market, prediction, and simulator pages |
 | `Stock/static/` | Application styles and static assets |
 | `StockMarket/` | Django project settings and URL configuration |
-| `assets/` | README screenshots, refreshed README captures, and model diagrams |
+| `assets/` | README screenshots and model diagrams |
 
 Academic report documents and report folders are intentionally kept out of
 this repository.
