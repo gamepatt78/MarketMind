@@ -1,5 +1,5 @@
 {% extends "template.html" %}
-{% block heading %}{% if mode == "register" %}Create an account{% elif mode == "forgot_password" %}Reset password{% else %}Welcome back{% endif %}{% endblock %}
+{% block heading %}{% if mode == "register" %}Create an account{% else %}Welcome back{% endif %}{% endblock %}
 {% block body %}
 <main class="auth-shell">
   <section class="auth-visual">
@@ -23,34 +23,38 @@
       {% if mode == "register" %}
         <span class="auth-step">GET STARTED</span>
         <h2>Create your account</h2>
-        <p class="auth-subtitle">A few details to set up your market workspace.</p>
-        {% if registered %}
-          <div class="alert alert-success" role="status">Registration complete. Log in with your username and password.</div>
+        <p class="auth-subtitle">Create an account to set up your market workspace.</p>
+        {% if error %}
+          <div class="auth-message auth-message-error" role="alert">{{ error }}</div>
         {% endif %}
-        <div id="auth-message" class="auth-message" role="alert" hidden></div>
-        <form id="contact-form" class="auth-form">
+        <form id="contact-form" class="auth-form" method="post" action="{% url 'register' %}">
           {% csrf_token %}
           <label for="full-name">Full name</label>
           <input class="auth-input" id="full-name" name="full_name" type="text"
-            maxlength="120" autocomplete="name" placeholder="Your full name" required>
+            maxlength="120" autocomplete="name" placeholder="Your full name"
+            value="{{ form_data.full_name|default:'' }}" required>
 
           <label for="username">Username</label>
           <input class="auth-input" id="username" name="username" type="text"
-            maxlength="150" autocomplete="username" placeholder="Choose a username" required>
+            maxlength="150" autocomplete="username" placeholder="Choose a username"
+            value="{{ form_data.username|default:'' }}" required>
 
-          <label for="email">Email address (optional)</label>
+          <label for="email">Email address</label>
           <input class="auth-input" id="email" name="email" type="email"
-            autocomplete="email" placeholder="you@example.com">
-          <span class="auth-hint">Email is not used for verification.</span>
+            autocomplete="email" placeholder="you@example.com"
+            value="{{ form_data.email|default:'' }}" required>
+          <span class="auth-hint">This email is saved with your account but is not verified.</span>
 
           <label for="phone">Phone number</label>
           <input class="auth-input" id="phone" name="phone" type="tel"
-            autocomplete="tel" placeholder="+1 555 123 4567" required>
-          <span class="auth-hint">We’ll send a verification code to this number by SMS.</span>
+            inputmode="numeric" autocomplete="tel-national" pattern="[6-9][0-9]{9}"
+            maxlength="10" placeholder="10-digit Indian mobile number"
+            value="{{ form_data.phone|default:'' }}" required>
+          <span class="auth-hint">Enter 10 digits. India country code +91 is added automatically.</span>
 
           <label for="birth-date">Date of birth</label>
           <input class="auth-input" id="birth-date" name="birth_date" type="date"
-            autocomplete="bday" required>
+            autocomplete="bday" value="{{ form_data.birth_date|default:'' }}" required>
           <span class="auth-hint" id="age-preview">Your age is calculated from your date of birth.</span>
 
           <label for="password">Password</label>
@@ -62,57 +66,15 @@
           <input class="auth-input" id="password-confirm" name="password_confirm"
             type="password" autocomplete="new-password" placeholder="Enter password again" required>
 
-          <button class="auth-primary" id="send-code" type="submit">Continue to verification</button>
-        </form>
-        <form id="verify-form" class="auth-form" hidden>
-          {% csrf_token %}
-          <p class="auth-subtitle">Enter the six-digit code sent to your phone by SMS.</p>
-          <label for="phone-otp-code">SMS verification code</label>
-          <input class="auth-input auth-otp-input" id="phone-otp-code" name="phone_code"
-            inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}"
-            maxlength="6" placeholder="000000" required>
-          <button class="auth-primary" id="verify-code" type="submit">Verify and finish registration</button>
+          <button class="auth-primary" type="submit">Create account</button>
         </form>
         <p class="auth-switch">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
-      {% else %}
-      {% if mode == "forgot_password" %}
-        <span class="auth-step">ACCOUNT RECOVERY</span>
-        <h2>Reset your password</h2>
-        <p class="auth-subtitle">We’ll email you a secure, one-time code to set a new password.</p>
-        <div id="auth-message" class="auth-message" role="alert" hidden></div>
-        <form id="reset-request-form" class="auth-form">
-          {% csrf_token %}
-          <label for="reset-email">Account email address</label>
-          <input class="auth-input" id="reset-email" name="email" type="email"
-            autocomplete="email" placeholder="you@example.com" required>
-          <button class="auth-primary" id="send-reset-code" type="submit">Email me a reset code</button>
-        </form>
-        <form id="reset-password-form" class="auth-form" hidden>
-          {% csrf_token %}
-          <p class="auth-subtitle">Enter the code from your email, then choose a new password.</p>
-          <label for="reset-code">Email verification code</label>
-          <input class="auth-input auth-otp-input" id="reset-code" name="code"
-            inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}"
-            maxlength="6" placeholder="000000" required>
-          <label for="new-password">New password</label>
-          <input class="auth-input" id="new-password" name="password" type="password"
-            autocomplete="new-password" minlength="8" placeholder="Create a strong password" required>
-          <span class="auth-hint">At least 8 characters, with uppercase and lowercase letters, a number, and a special character.</span>
-          <label for="confirm-new-password">Confirm new password</label>
-          <input class="auth-input" id="confirm-new-password" name="password_confirm"
-            type="password" autocomplete="new-password" placeholder="Enter password again" required>
-          <button class="auth-primary" id="save-new-password" type="submit">Save new password</button>
-        </form>
-        <p class="auth-switch"><a href="{% url 'login' %}">Back to log in</a></p>
       {% else %}
         <span class="auth-step">YOUR MARKET WORKSPACE</span>
         <h2>Welcome back</h2>
         <p class="auth-subtitle">Log in to continue to your account.</p>
         {% if registered %}
           <div class="alert alert-success" role="status">Your account is ready. Log in with your username and password.</div>
-        {% endif %}
-        {% if password_reset %}
-          <div class="alert alert-success" role="status">Password changed successfully. Please log in with your new password.</div>
         {% endif %}
         {% if error %}
           <div class="auth-message auth-message-error" role="alert">{{ error }}</div>
@@ -129,172 +91,10 @@
             autocomplete="current-password" placeholder="Enter your password" required>
           <button class="auth-primary" type="submit">Log in</button>
         </form>
-        <p class="auth-switch"><a href="{% url 'forgot_password' %}">Forgot your password?</a></p>
         <p class="auth-switch">New to MarketMind? <a href="{% url 'register' %}">Create an account</a></p>
-      {% endif %}
       {% endif %}
     </div>
     <p class="auth-legal">By continuing, you agree to use this platform responsibly.</p>
   </section>
 </main>
-{% endblock %}
-{% block script %}
-{% if mode == "register" %}
-<script>
-  const contactForm = document.querySelector("#contact-form");
-  const verifyForm = document.querySelector("#verify-form");
-  const messageBox = document.querySelector("#auth-message");
-  const sendButton = document.querySelector("#send-code");
-  const verifyButton = document.querySelector("#verify-code");
-  const csrfToken = contactForm.querySelector("[name=csrfmiddlewaretoken]").value;
-  let requestedPhone = "";
-
-  function showMessage(message, isError) {
-    messageBox.textContent = message;
-    messageBox.className = isError
-      ? "auth-message auth-message-error"
-      : "auth-message auth-message-success";
-    messageBox.hidden = false;
-  }
-
-  async function postForm(url, values) {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "X-CSRFToken": csrfToken,
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams(values).toString()
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "The request could not be completed.");
-    return data;
-  }
-
-  contactForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-    sendButton.disabled = true;
-    messageBox.hidden = true;
-    const values = Object.fromEntries(new FormData(contactForm).entries());
-    requestedPhone = values.phone;
-    try {
-      const result = await postForm("{% url 'send_registration_otp' %}", values);
-      showMessage(result.message, false);
-      contactForm.hidden = true;
-      verifyForm.hidden = false;
-      document.querySelector("#phone-otp-code").focus();
-    } catch (error) {
-      showMessage(error.message, true);
-    } finally {
-      sendButton.disabled = false;
-    }
-  });
-
-  verifyForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-    verifyButton.disabled = true;
-    messageBox.hidden = true;
-    try {
-      const result = await postForm("{% url 'verify_registration_otp' %}", {
-        phone: requestedPhone,
-        phone_code: document.querySelector("#phone-otp-code").value
-      });
-      window.location.assign(result.redirect_url);
-    } catch (error) {
-      showMessage(error.message, true);
-      verifyButton.disabled = false;
-    }
-  });
-
-  const birthDate = document.querySelector("#birth-date");
-  const today = new Date();
-  birthDate.max = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, "0"),
-    String(today.getDate()).padStart(2, "0")
-  ].join("-");
-  birthDate.addEventListener("change", function () {
-    if (!birthDate.value) return;
-    const birth = new Date(birthDate.value + "T00:00:00");
-    let age = today.getFullYear() - birth.getFullYear();
-    const beforeBirthday = today.getMonth() < birth.getMonth()
-      || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate());
-    if (beforeBirthday) age--;
-    document.querySelector("#age-preview").textContent = age >= 0
-      ? "Age: " + age
-      : "Date of birth must be in the past.";
-  });
-</script>
-{% endif %}
-{% if mode == "forgot_password" %}
-<script>
-  const requestResetForm = document.querySelector("#reset-request-form");
-  const resetPasswordForm = document.querySelector("#reset-password-form");
-  const resetMessage = document.querySelector("#auth-message");
-  const sendResetButton = document.querySelector("#send-reset-code");
-  const savePasswordButton = document.querySelector("#save-new-password");
-  const resetCsrfToken = requestResetForm.querySelector("[name=csrfmiddlewaretoken]").value;
-  let resetEmail = "";
-
-  function showResetMessage(message, isError) {
-    resetMessage.textContent = message;
-    resetMessage.className = isError
-      ? "auth-message auth-message-error"
-      : "auth-message auth-message-success";
-    resetMessage.hidden = false;
-  }
-
-  async function postResetForm(url, values) {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "X-CSRFToken": resetCsrfToken,
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams(values).toString()
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "The request could not be completed.");
-    return data;
-  }
-
-  requestResetForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-    sendResetButton.disabled = true;
-    resetMessage.hidden = true;
-    resetEmail = document.querySelector("#reset-email").value;
-    try {
-      const result = await postResetForm("{% url 'send_password_reset_otp' %}", {
-        email: resetEmail
-      });
-      showResetMessage(result.message, false);
-      requestResetForm.hidden = true;
-      resetPasswordForm.hidden = false;
-      document.querySelector("#reset-code").focus();
-    } catch (error) {
-      showResetMessage(error.message, true);
-    } finally {
-      sendResetButton.disabled = false;
-    }
-  });
-
-  resetPasswordForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-    savePasswordButton.disabled = true;
-    resetMessage.hidden = true;
-    try {
-      const result = await postResetForm("{% url 'reset_password_with_otp' %}", {
-        email: resetEmail,
-        code: document.querySelector("#reset-code").value,
-        password: document.querySelector("#new-password").value,
-        password_confirm: document.querySelector("#confirm-new-password").value
-      });
-      window.location.assign(result.redirect_url);
-    } catch (error) {
-      showResetMessage(error.message, true);
-      savePasswordButton.disabled = false;
-    }
-  });
-</script>
-{% endif %}
 {% endblock %}

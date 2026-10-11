@@ -34,31 +34,3 @@ class ContactAccount(models.Model):
 
     def __str__(self):
         return self.identifier
-
-
-class LoginOTP(models.Model):
-    PURPOSE_REGISTER = "register"
-    PURPOSE_LOGIN = "login"
-    PURPOSE_PASSWORD_RESET = "password_reset"
-    PURPOSE_CHOICES = (
-        (PURPOSE_REGISTER, "Registration"),
-        (PURPOSE_LOGIN, "Login"),
-        (PURPOSE_PASSWORD_RESET, "Password reset"),
-    )
-
-    identifier = models.CharField(max_length=254, db_index=True)
-    purpose = models.CharField(max_length=16, choices=PURPOSE_CHOICES)
-    code_hash = models.CharField(max_length=128)
-    pending_username = models.CharField(max_length=150, blank=True)
-    pending_full_name = models.CharField(max_length=120, blank=True)
-    pending_birth_date = models.DateField(null=True, blank=True)
-    pending_password_hash = models.CharField(max_length=128, blank=True)
-    pending_email = models.EmailField(blank=True, default="")
-    expires_at = models.DateTimeField()
-    attempts = models.PositiveSmallIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=("identifier", "purpose", "-created_at")),
-        ]

@@ -90,17 +90,16 @@ a rigorous out-of-sample evaluation.
 This is a historical strategy experiment. It does not execute orders, include
 a brokerage connection, or guarantee that results would repeat.
 
-### Accounts and verification
+### Accounts
 
 - Market pages require a signed-in account.
-- Registration uses SMS verification through Twilio. The phone number is
-  required; email is optional and is not verified during registration.
-- Password reset is sent to the account email using SMTP.
-- OTPs expire after five minutes. Requests are rate-limited and verification
-  attempts are limited.
-
-SMS and email delivery need valid service credentials; without them, codes
-cannot be delivered.
+- Registration saves the username, password hash, name, date of birth, email,
+  and phone details to the local SQLite database. Email and phone ownership
+  are not verified; registration does not send OTPs or other email.
+- Login checks the stored username and password against the SQLite user
+  database.
+- Email OTP and email-based password-reset flows are not enabled. Forgotten
+  passwords require an administrator reset.
 
 ## Run locally
 
@@ -109,8 +108,6 @@ cannot be delivered.
 - Git
 - Python with `pip`
 - Network access to retrieve market data
-- Twilio credentials for SMS registration
-- SMTP credentials if you want to test email-based password reset
 
 The current development setup uses Python 3.12.10 and Django 3.1.13. **Django
 3.1 is no longer supported upstream.** This repository is a development
@@ -167,41 +164,11 @@ python -m pip install tensorflow
 `requirements.txt` is an old environment-specific package snapshot and is not
 the recommended installation command for a fresh environment.
 
-### 4. Configure SMS and email delivery
+### 4. Account storage
 
-Set service credentials as environment variables in the same environment where
-you run Django. Do not commit real credentials or paste them into issues or
-chat.
-
-**Required for registration SMS:**
-
-```text
-TWILIO_ACCOUNT_SID=your-account-sid
-TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_FROM_PHONE=your-twilio-number
-```
-
-**Required only for email password reset:**
-
-```text
-EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=your-smtp-username
-EMAIL_HOST_PASSWORD=your-smtp-password
-EMAIL_USE_TLS=true
-DEFAULT_FROM_EMAIL=your-verified-sender@example.com
-```
-
-For example, in PowerShell you can set values for the current terminal session:
-
-```powershell
-$env:TWILIO_ACCOUNT_SID = "your-account-sid"
-$env:TWILIO_AUTH_TOKEN = "your-auth-token"
-$env:TWILIO_FROM_PHONE = "+15551234567"
-```
-
-Use your real Twilio-issued values locally; the example above is not a working
-credential.
+The development app stores accounts in `db.sqlite3` in the project root.
+Registration does not send email or require an OTP. Back up this database if
+you need to preserve local accounts.
 
 ### 5. Create the database and start the server
 
@@ -210,8 +177,9 @@ python manage.py migrate
 python manage.py runserver 127.0.0.1:8000
 ```
 
-Visit <http://127.0.0.1:8000/>. Register using a phone number that can receive
-SMS, verify the code, and then sign in.
+Visit <http://127.0.0.1:8000/>. Create an account with an email address and a
+valid 10-digit Indian mobile number, then sign in with the username and
+password you chose.
 
 ## Supported symbols and periods
 
@@ -248,8 +216,8 @@ availability depends on Yahoo Finance and the selected symbol/period.
 | `StockMarket/` | Django project settings and URL configuration |
 | `assets/` | README screenshots and model diagrams |
 
-Academic report documents and report folders are intentionally kept out of
-this repository.
+Academic report documents and report folders, including generated PDF reports,
+are intentionally kept out of this repository.
 
 ## Tests and checks
 
@@ -270,7 +238,7 @@ deployment:
 - set a unique, private `DJANGO_SECRET_KEY`;
 - disable debug mode and configure allowed hosts, HTTPS, and secure cookies;
 - use a production database and WSGI/ASGI server;
-- configure Twilio and SMTP credentials outside the repository;
+- keep deployment secrets outside the repository;
 - review Django and third-party dependency versions, update unsupported
   software, and test the changes;
 - add deployment-appropriate logging, monitoring, backup, and rate-limit

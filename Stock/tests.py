@@ -1,17 +1,19 @@
-from datetime import date
 from types import ModuleType
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
 from Stock.backend.stockinfo import align_plot_series
-from Stock.models import ContactAccount, LoginOTP
+from Stock.models import ContactAccount
 
 
 class FreeMarketToolsTests(TestCase):
     def setUp(self):
-        user = get_user_model().objects.create_user(username="market-tools-user", password="MarketTools!2026")
+        user = get_user_model().objects.create_user(
+            username="market-tools-user",
+            password="Market!Tools987",
+        )
         self.client.force_login(user)
 
     def test_ai_pages_are_available_without_payment(self):
@@ -101,341 +103,115 @@ class FreeMarketToolsTests(TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 404)
 
-@override_settings(
-    EMAIL_HOST="smtp.example.test",
-    DEFAULT_FROM_EMAIL="noreply@example.test",
-    TWILIO_ACCOUNT_SID="ACtest",
-    TWILIO_AUTH_TOKEN="test-token",
-    TWILIO_FROM_PHONE="+15550000000",
-)
-class OTPAuthenticationTests(TestCase):
-    def test_registration_page_requires_phone_but_not_email_otp(self):
+
+class DirectRegistrationTests(TestCase):
+    def registration_data(self, **overrides):
+        values = {
+            "full_name": "New Trader",
+            "username": "newtrader",
+            "email": "new.user@example.com",
+            "phone": "9876543210",
+            "birth_date": "1995-04-12",
+            "password": "Market!Trend2026",
+            "password_confirm": "Market!Trend2026",
+        }
+        values.update(overrides)
+        return values
+
+    def test_registration_page_has_no_email_verification_step(self):
         response = self.client.get("/register")
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Email address (optional)")
-        self.assertContains(response, "SMS verification code")
-        self.assertNotContains(response, "Email verification code")
+        self.assertContains(response, "Email address")
+        self.assertContains(response, "This email is saved with your account but is not verified.")
+        self.assertContains(response, 'method="post"')
+        self.assertContains(response, "Create account")
+        self.assertNotContains(response, "verification code")
 
-    def test_registration_username_ignores_invisible_format_characters(self):
-        with patch("Stock.views._deliver_otp"):
-            response = self.client.post(
-                "/otp/register/send",
-                {
-                    "email": "asha@example.com",
-                    "phone": "+919876543210",
-                    "username": "\u200basha_trader26\u200b",
-                    "full_name": "Asha Sharma",
-                    "birth_date": "1998-05-12",
-                    "password": "Market!Trend2026",
-                    "password_confirm": "Market!Trend2026",
-                },
-            )
+    def test_registration_saves_user_and_contacts_in_sqlite_without_email_service(self):
+        response = self.client.post("/register", self.registration_data())
 
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(
-            LoginOTP.objects.filter(
-                pending_username="asha_trader26",
-            ).exists()
-        )
-
-    def test_password_reset_email_code_changes_password_and_returns_to_login(self):
-        user = get_user_model().objects.create_user(
-            username="reset-trader",
-            email="reset@example.com",
-            password="OldPass987!",
-        )
-        ContactAccount.objects.create(
-            user=user,
-            identifier="reset@example.com",
-            channel=ContactAccount.CHANNEL_EMAIL,
-            full_name="Reset Trader",
-        )
-        sent = {}
-
-        def capture_otp(identifier, channel, code):
-            sent.update(identifier=identifier, channel=channel, code=code)
-
-        with patch("Stock.views._deliver_otp", side_effect=capture_otp):
-            send_response = self.client.post(
-                "/password/forgot/send",
-                {"email": "RESET@example.com"},
-            )
-            self.assertEqual(send_response.status_code, 200)
-            self.assertEqual(sent["identifier"], "reset@example.com")
-            self.assertEqual(sent["channel"], ContactAccount.CHANNEL_EMAIL)
-
-            reset_response = self.client.post(
-                "/password/forgot/reset",
-                {
-                    "email": "reset@example.com",
-                    "code": sent["code"],
-                    "password": "NewStrongPass789!",
-                    "password_confirm": "NewStrongPass789!",
-                },
-            )
-
-        self.assertEqual(reset_response.status_code, 200)
-        self.assertEqual(reset_response.json()["redirect_url"], "/login?password_reset=1")
-        user.refresh_from_db()
-        self.assertTrue(user.check_password("NewStrongPass789!"))
-        self.assertEqual(LoginOTP.objects.filter(
-            purpose=LoginOTP.PURPOSE_PASSWORD_RESET
-        ).count(), 0)
-        login_response = self.client.post(
-            "/login",
-            {"username": "reset-trader", "password": "NewStrongPass789!"},
-        )
-        self.assertEqual(login_response.status_code, 302)
-
-    def test_password_reset_rejects_wrong_code_and_password_mismatch(self):
-        user = get_user_model().objects.create_user(
-            username="reset-trader",
-            email="reset@example.com",
-            password="OldPass987!",
-        )
-        ContactAccount.objects.create(
-            user=user,
-            identifier="reset@example.com",
-            channel=ContactAccount.CHANNEL_EMAIL,
-            full_name="Reset Trader",
-        )
-        with patch("Stock.views.secrets.randbelow", return_value=123456), patch(
-            "Stock.views._deliver_otp"
-        ):
-            self.client.post("/password/forgot/send", {"email": "reset@example.com"})
-
-        mismatch = self.client.post(
-            "/password/forgot/reset",
-            {
-                "email": "reset@example.com",
-                "code": "123456",
-                "password": "NewStrongPass789!",
-                "password_confirm": "DifferentPass789!",
-            },
-        )
-        invalid_code = self.client.post(
-            "/password/forgot/reset",
-            {
-                "email": "reset@example.com",
-                "code": "000000",
-                "password": "NewStrongPass789!",
-                "password_confirm": "NewStrongPass789!",
-            },
-        )
-
-        self.assertEqual(mismatch.status_code, 400)
-        self.assertEqual(invalid_code.status_code, 400)
-        user.refresh_from_db()
-        self.assertTrue(user.check_password("OldPass987!"))
-
-    def test_password_reset_request_does_not_disclose_unknown_email(self):
-        with patch("Stock.views._deliver_otp") as deliver:
-            response = self.client.post(
-                "/password/forgot/send",
-                {"email": "unknown@example.com"},
-            )
-
-        self.assertEqual(response.status_code, 200)
+        self.assertRedirects(response, "/login?registered=1")
+        user = get_user_model().objects.get(username="newtrader")
+        self.assertEqual(user.email, "new.user@example.com")
+        self.assertEqual(user.first_name, "New Trader")
+        self.assertTrue(user.check_password("Market!Trend2026"))
         self.assertEqual(
-            response.json()["message"],
-            "If an account uses that email, a password reset code has been sent.",
+            set(ContactAccount.objects.filter(user=user).values_list("identifier", flat=True)),
+            {"new.user@example.com", "+919876543210"},
         )
-        deliver.assert_not_called()
-
-    def test_registration_sends_only_phone_otp_then_returns_to_login(self):
-        sent = {}
-
-        def capture_otp(identifier, channel, code):
-            sent[identifier] = {"channel": channel, "code": code}
-
-        with patch("Stock.views._deliver_otp", side_effect=capture_otp):
-            send_response = self.client.post(
-                "/otp/register/send",
-                {
-                    "email": "  NEW.USER@example.com ",
-                    "phone": "9876543210",
-                    "username": "newtrader",
-                    "full_name": "New Trader",
-                    "birth_date": "1995-04-12",
-                    "password": "SecurePass987!",
-                    "password_confirm": "SecurePass987!",
-                },
-            )
-            self.assertEqual(send_response.status_code, 200)
-            self.assertEqual(len(sent), 1)
-            self.assertEqual(sent["+919876543210"]["channel"], ContactAccount.CHANNEL_PHONE)
-
-            verify_response = self.client.post(
-                "/otp/register/verify",
-                {
-                    "phone": "9876543210",
-                    "phone_code": sent["+919876543210"]["code"],
-                },
-            )
-
-        self.assertEqual(verify_response.status_code, 200)
-        self.assertEqual(verify_response.json()["redirect_url"], "/login?registered=1")
         self.assertFalse(self.client.session.get("_auth_user_id"))
-        contacts = ContactAccount.objects.filter(identifier="+919876543210")
-        self.assertEqual(contacts.count(), 1)
-        account = contacts.get(channel=ContactAccount.CHANNEL_PHONE)
-        self.assertEqual(account.user.username, "newtrader")
-        self.assertEqual(account.user.email, "new.user@example.com")
-        self.assertEqual(account.full_name, "New Trader")
-        self.assertEqual(account.birth_date.isoformat(), "1995-04-12")
-        today = date.today()
-        expected_age = today.year - 1995 - (
-            (today.month, today.day) < (4, 12)
-        )
-        self.assertEqual(account.age, expected_age)
-        self.assertTrue(account.user.check_password("SecurePass987!"))
-        self.assertEqual(LoginOTP.objects.count(), 0)
 
-    def test_login_uses_username_and_password(self):
-        user = get_user_model().objects.create_user(
-            username="trader",
-            password="SecurePass987!",
+    def test_registration_normalizes_username_and_email(self):
+        response = self.client.post(
+            "/register",
+            self.registration_data(
+                username="\u200basha_trader26\u200b",
+                email="  ASHA@example.com ",
+            ),
         )
+
+        self.assertRedirects(response, "/login?registered=1")
+        user = get_user_model().objects.get(username="asha_trader26")
+        self.assertEqual(user.email, "asha@example.com")
+
+    def test_new_account_can_log_in_with_username_and_password(self):
+        self.client.post("/register", self.registration_data())
         response = self.client.post(
             "/login",
-            {"username": "trader", "password": "SecurePass987!"},
+            {"username": "newtrader", "password": "Market!Trend2026"},
         )
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response["Location"], "/")
+
+        self.assertRedirects(response, "/")
         self.assertEqual(self.client.get("/").status_code, 200)
 
-    def test_invalid_password_does_not_authenticate(self):
-        get_user_model().objects.create_user(
-            username="trader",
-            password="SecurePass987!",
+    def test_registration_rejects_invalid_email_phone_and_password_confirmation(self):
+        invalid_inputs = (
+            {"email": "not-an-email"},
+            {"phone": "12345"},
+            {"password_confirm": "a different password"},
         )
-        response = self.client.post(
-            "/login",
-            {"username": "trader", "password": "wrong-password"},
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "username or password is incorrect")
-        self.assertFalse(self.client.session.get("_auth_user_id"))
-
-    def test_registration_rejects_password_without_mixed_character_types(self):
-        response = self.client.post(
-            "/otp/register/send",
-            {
-                "email": "new.user@example.com",
-                "phone": "+919876543210",
-                "username": "newtrader",
-                "full_name": "New Trader",
-                "birth_date": "1995-04-12",
-                "password": "alllowercase123",
-                "password_confirm": "alllowercase123",
-            },
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("uppercase letter", response.json()["error"])
-        self.assertEqual(LoginOTP.objects.count(), 0)
-
-    def test_anonymous_users_are_sent_to_login_before_accessing_the_app(self):
-        for path in ("/", "/stock", "/predict_stock/AAPL/6mo/5/30"):
-            with self.subTest(path=path):
-                response = self.client.get(path)
-                self.assertEqual(response.status_code, 302)
-                self.assertIn("/login", response["Location"])
-
-    def test_forgot_password_page_is_public(self):
-        response = self.client.get("/password/forgot")
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Reset your password")
-        self.assertContains(response, "Email me a reset code")
-
-    def test_registration_does_not_require_email(self):
-        sent = {}
-
-        def capture_otp(identifier, channel, code):
-            sent.update(identifier=identifier, channel=channel, code=code)
-
-        with patch("Stock.views._deliver_otp", side_effect=capture_otp):
-            send_response = self.client.post(
-                "/otp/register/send",
-                {
-                    "email": "",
-                    "phone": "+919876543211",
-                    "username": "phoneonly",
-                    "full_name": "Phone Only",
-                    "birth_date": "1995-04-12",
-                    "password": "SecurePass987!",
-                    "password_confirm": "SecurePass987!",
-                },
-            )
-            self.assertEqual(send_response.status_code, 200)
-            self.assertEqual(sent["identifier"], "+919876543211")
-            self.assertEqual(sent["channel"], ContactAccount.CHANNEL_PHONE)
-
-            verify_response = self.client.post(
-                "/otp/register/verify",
-                {
-                    "phone": "+919876543211",
-                    "phone_code": sent["code"],
-                },
-            )
-
-        self.assertEqual(verify_response.status_code, 200)
-        user = get_user_model().objects.get(username="phoneonly")
-        self.assertEqual(user.email, "")
-        self.assertTrue(
-            ContactAccount.objects.filter(
-                user=user,
-                identifier="+919876543211",
-                channel=ContactAccount.CHANNEL_PHONE,
-            ).exists()
-        )
-
-    def test_invalid_phone_code_does_not_create_registration(self):
-        with patch("Stock.views.secrets.randbelow", return_value=123456), patch(
-            "Stock.views._deliver_otp"
-        ):
-            self.client.post(
-                "/otp/register/send",
-                {
-                    "phone": "+919876543210",
-                    "username": "newtrader",
-                    "full_name": "New Trader",
-                    "birth_date": "1995-04-12",
-                    "password": "SecurePass987!",
-                    "password_confirm": "SecurePass987!",
-                },
-            )
-
-        response = self.client.post(
-            "/otp/register/verify",
-            {
-                "phone": "+919876543210",
-                "phone_code": "000000",
-            },
-        )
-
-        self.assertEqual(response.status_code, 400)
+        for index, changes in enumerate(invalid_inputs):
+            with self.subTest(changes=changes):
+                data = self.registration_data(
+                    username=f"invaliduser{index}",
+                    email=f"invalid{index}@example.com",
+                    phone=f"987654321{index}",
+                )
+                data.update(changes)
+                response = self.client.post(
+                    "/register",
+                    data,
+                )
+                self.assertEqual(response.status_code, 400)
+        self.assertEqual(get_user_model().objects.count(), 0)
         self.assertEqual(ContactAccount.objects.count(), 0)
 
-    def test_missing_sms_delivery_configuration_returns_clear_error(self):
-        with override_settings(
-            TWILIO_ACCOUNT_SID="",
-            TWILIO_AUTH_TOKEN="",
-            TWILIO_FROM_PHONE="",
-        ):
-            response = self.client.post(
-                "/otp/register/send",
-                {
-                    "phone": "+919876543210",
-                    "username": "newtrader",
-                    "full_name": "New Trader",
-                    "birth_date": "1995-04-12",
-                    "password": "SecurePass987!",
-                    "password_confirm": "SecurePass987!",
-                },
-            )
+    def test_registration_rejects_duplicate_email_and_phone(self):
+        self.client.post("/register", self.registration_data())
 
-        self.assertEqual(response.status_code, 503)
-        self.assertIn("Twilio", response.json()["error"])
+        duplicate_email = self.client.post(
+            "/register",
+            self.registration_data(username="seconduser", phone="9876543211"),
+        )
+        duplicate_phone = self.client.post(
+            "/register",
+            self.registration_data(username="thirduser", email="third@example.com"),
+        )
+
+        self.assertEqual(duplicate_email.status_code, 400)
+        self.assertContains(duplicate_email, "already uses this email", status_code=400)
+        self.assertEqual(duplicate_phone.status_code, 400)
+        self.assertContains(duplicate_phone, "already uses this phone number", status_code=400)
+        self.assertEqual(get_user_model().objects.count(), 1)
+
+    def test_email_otp_and_password_reset_routes_are_removed(self):
+        for path in (
+            "/otp/register/send",
+            "/otp/register/verify",
+            "/password/forgot",
+            "/password/forgot/send",
+            "/password/forgot/reset",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code, 404)
