@@ -248,12 +248,13 @@ python manage.py test Stock
 
 ## Security and deployment notes
 
-The checked-in settings are for development: `DEBUG` is enabled, `ALLOWED_HOSTS`
-is empty, and the default secret key is explicitly development-only. Before
-deployment:
+`DEBUG` is off by default. The app accepts a comma-separated `ALLOWED_HOSTS`
+environment variable and automatically includes Render's
+`RENDER_EXTERNAL_HOSTNAME`. Before deployment:
 
 - set a unique, private `DJANGO_SECRET_KEY`;
-- disable debug mode and configure allowed hosts, HTTPS, and secure cookies;
+- keep `DJANGO_DEBUG` unset or set it to `false`;
+- configure any additional allowed hosts, HTTPS, and secure cookies;
 - use a production database and WSGI/ASGI server;
 - keep deployment secrets outside the repository;
 - review Django and third-party dependency versions, update unsupported
