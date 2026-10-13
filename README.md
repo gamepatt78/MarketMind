@@ -181,6 +181,24 @@ Visit <http://127.0.0.1:8000/>. Create an account with an email address and a
 valid 10-digit Indian mobile number, then sign in with the username and
 password you chose.
 
+### Run with Docker
+
+The Docker image uses Python 3.12 and the same lightweight dependencies as the
+local setup. TensorFlow is optional; without it, forecasts use the Monte Carlo
+fallback.
+
+```bash
+docker build -t marketmind .
+docker run --rm -p 8000:8000 marketmind
+```
+
+The container applies migrations at startup and listens on `PORT` when the
+deployment platform provides it (otherwise port 8000). SQLite stores data in
+the container filesystem, so deployments that need accounts to survive
+restarts must attach persistent storage for `db.sqlite3`. The checked-in Django
+settings are development settings and must be configured safely before public
+deployment.
+
 ## Supported symbols and periods
 
 The ticker list is maintained in

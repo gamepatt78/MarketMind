@@ -1,17 +1,16 @@
-# set base image (host OS)
-FROM python:3.6.2
+FROM python:3.12-slim
 
-# copy the content of the local src directory to the working directory
-COPY ./ .
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# install dependencies
-RUN pip install --upgrade pip
-RUN pip install -r docReq.txt
+WORKDIR /app
 
-RUN apt update -y
-RUN apt install -y vim
+COPY docReq.txt .
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir -r docReq.txt
 
-RUN python manage.py migrate 
+COPY . .
 
-# command to run on container start
-CMD [ "python", "manage.py", "runserver" ]
+EXPOSE 8000
+
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:${PORT:-8000}"]
