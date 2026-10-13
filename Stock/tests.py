@@ -222,6 +222,12 @@ class DirectRegistrationTests(TestCase):
         self.assertContains(response, 'href="/password/forgot"')
         self.assertContains(response, "Forgot password?")
 
+    def test_password_reset_page_uses_root_relative_favicon(self):
+        response = self.client.get("/password/forgot")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'rel="icon" href="/static/assets/logo.png"')
+
     def test_password_reset_sends_token_link_and_changes_password(self):
         user = get_user_model().objects.create_user(
             username="resetuser",
