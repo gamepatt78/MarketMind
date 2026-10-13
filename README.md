@@ -109,10 +109,9 @@ a brokerage connection, or guarantee that results would repeat.
 - Python with `pip`
 - Network access to retrieve market data
 
-The current development setup uses Python 3.12.10 and Django 3.1.13. **Django
-3.1 is no longer supported upstream.** This repository is a development
-prototype; update and test the framework and dependencies before using it in a
-public deployment.
+The current development setup uses Python 3.12 and Django 5.2 LTS. This
+repository is a development prototype; review and test the framework and
+dependencies before using it in a public deployment.
 
 ### 1. Clone the project
 
@@ -149,7 +148,7 @@ python -m pip install --upgrade pip
 ### 3. Install the application dependencies
 
 ```bash
-python -m pip install Django==3.1.13 numpy pandas scikit-learn matplotlib mpld3 seaborn tqdm yfinance requests
+python -m pip install "Django>=5.2,<5.3" numpy pandas scikit-learn matplotlib mpld3 seaborn tqdm yfinance requests
 ```
 
 TensorFlow is optional. Install it to enable the LSTM forecast implementation;
