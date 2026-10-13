@@ -251,7 +251,10 @@ python manage.py test Stock
 
 `DEBUG` is off by default. The app accepts a comma-separated `ALLOWED_HOSTS`
 environment variable and automatically includes Render's
-`RENDER_EXTERNAL_HOSTNAME`. Before deployment:
+`RENDER_EXTERNAL_HOSTNAME`. On Render, it also recognizes the forwarded HTTPS
+scheme and trusts that service's HTTPS origin for CSRF checks. For other
+platforms, configure `SECURE_PROXY_SSL_HEADER` appropriately and set
+`CSRF_TRUSTED_ORIGINS` to the trusted HTTPS origins. Before deployment:
 
 - set a unique, private `DJANGO_SECRET_KEY`;
 - keep `DJANGO_DEBUG` unset or set it to `false`;
