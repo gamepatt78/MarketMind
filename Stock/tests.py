@@ -2,7 +2,8 @@ from types import ModuleType
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 
 from Stock.backend.stockinfo import align_plot_series
 from Stock.models import ContactAccount
@@ -104,6 +105,7 @@ class FreeMarketToolsTests(TestCase):
                 self.assertEqual(self.client.get(path).status_code, 404)
 
 
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class DirectRegistrationTests(TestCase):
     def registration_data(self, **overrides):
         values = {
@@ -205,13 +207,65 @@ class DirectRegistrationTests(TestCase):
         self.assertContains(duplicate_phone, "already uses this phone number", status_code=400)
         self.assertEqual(get_user_model().objects.count(), 1)
 
-    def test_email_otp_and_password_reset_routes_are_removed(self):
+    def test_email_otp_routes_remain_removed(self):
         for path in (
             "/otp/register/send",
             "/otp/register/verify",
-            "/password/forgot",
-            "/password/forgot/send",
-            "/password/forgot/reset",
         ):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 404)
+
+    def test_login_page_links_to_password_recovery(self):
+        response = self.client.get("/login")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'href="/password/forgot"')
+        self.assertContains(response, "Forgot password?")
+
+    def test_password_reset_sends_token_link_and_changes_password(self):
+        user = get_user_model().objects.create_user(
+            username="resetuser",
+            email="reset@example.com",
+            password="Old!MarketPassword2026",
+        )
+
+        response = self.client.post(
+            "/password/forgot",
+            {"email": "reset@example.com"},
+            follow=True,
+        )
+
+        self.assertRedirects(response, "/password/forgot/done")
+        self.assertContains(response, "If an account exists")
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("http://testserver/password/reset/", mail.outbox[0].body)
+        reset_path = mail.outbox[0].body.split("http://testserver", 1)[1].split()[0]
+        response = self.client.get(reset_path, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create a new password")
+        confirm_path = response.wsgi_request.path_info
+
+        response = self.client.post(
+            confirm_path,
+            {
+                "new_password1": "New!MarketPassword2026",
+                "new_password2": "New!MarketPassword2026",
+            },
+        )
+
+        self.assertRedirects(response, "/password/reset/complete")
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("New!MarketPassword2026"))
+
+    def test_password_reset_response_does_not_disclose_unknown_email(self):
+        response = self.client.post(
+            "/password/forgot",
+            {"email": "unknown@example.com"},
+            follow=True,
+        )
+
+        self.assertRedirects(response, "/password/forgot/done")
+        self.assertContains(response, "If an account exists")
+
+        self.assertEqual(len(mail.outbox), 0)

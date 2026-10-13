@@ -89,6 +89,7 @@
           <label for="login-password">Password</label>
           <input class="auth-input" id="login-password" name="password" type="password"
             autocomplete="current-password" placeholder="Enter your password" required>
+          <p class="auth-forgot"><a href="{% url 'password_reset' %}">Forgot password?</a></p>
           <button class="auth-primary" type="submit">Log in</button>
         </form>
         <p class="auth-switch">New to MarketMind? <a href="{% url 'register' %}">Create an account</a></p>

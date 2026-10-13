@@ -227,6 +227,13 @@ runtime. To create or update the service:
    database migrations before starting Django. Open the `onrender.com` URL
    shown on the service page.
 
+To enable password recovery, configure an SMTP provider in Render's
+**Environment Variables**: `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`,
+`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, and `DEFAULT_FROM_EMAIL`. Keep
+credentials private. Without `EMAIL_HOST`, Django prints reset messages to the
+server console, which is suitable for local development but not for users of
+the live site.
+
 The Django settings automatically allow Render's `RENDER_EXTERNAL_HOSTNAME`,
 trust the service's HTTPS origin for CSRF, and recognize Render's forwarded
 HTTPS scheme. You normally do not need to set `ALLOWED_HOSTS` or

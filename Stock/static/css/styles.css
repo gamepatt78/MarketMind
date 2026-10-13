@@ -349,6 +349,33 @@ body.auth-page {
     font-weight: 700;
 }
 
+.auth-forgot {
+    margin: 2px 0 0;
+    font-size: 13px;
+    text-align: right;
+}
+
+.auth-forgot a {
+    color: #087e70;
+    font-weight: 700;
+}
+
+.auth-reset-shell {
+    grid-template-columns: 1fr;
+    min-height: 440px;
+    max-width: 600px;
+    margin: auto;
+}
+
+.auth-reset-brand {
+    margin-bottom: 28px;
+    color: #14233b;
+}
+
+.auth-reset-brand:hover {
+    color: #14233b;
+}
+
 .auth-legal {
     margin: 25px 0 0;
     color: #9aa5b5;
