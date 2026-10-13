@@ -184,7 +184,8 @@ password you chose.
 
 The Docker image uses Python 3.12 and the same lightweight dependencies as the
 local setup. TensorFlow is optional; without it, forecasts use the Monte Carlo
-fallback.
+fallback. Static assets are collected during the image build and served by
+WhiteNoise.
 
 ```bash
 docker build -t marketmind .
