@@ -4,8 +4,9 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import TestCase, override_settings
+import pandas as pd
 
-from Stock.backend.stockinfo import align_plot_series
+from Stock.backend.stockinfo import align_plot_series, flatten_yfinance_columns
 from Stock.models import ContactAccount
 
 
@@ -49,6 +50,18 @@ class FreeMarketToolsTests(TestCase):
         self.assertEqual(len(aligned_prices), 31)
         self.assertEqual(aligned_dates[-1], 30)
         self.assertEqual(aligned_prices[-1], 30)
+
+    def test_yfinance_multiindex_columns_flatten_for_single_symbol(self):
+        columns = pd.MultiIndex.from_tuples(
+            [("Close", "AAPL"), ("Volume", "AAPL")],
+            names=["Price", "Ticker"],
+        )
+        data = pd.DataFrame([[150.0, 1000]], columns=columns)
+
+        flattened = flatten_yfinance_columns(data)
+
+        self.assertEqual(list(flattened.columns), ["Close", "Volume"])
+        self.assertEqual(list(data.columns), list(columns))
 
     def test_ai_endpoints_are_available_without_payment(self):
         prediction_module = ModuleType("Stock.backend.predict")

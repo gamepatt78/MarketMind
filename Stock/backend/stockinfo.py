@@ -41,6 +41,14 @@ def align_plot_series(x_values, y_values):
     return x_values[:length], y_values[:length]
 
 
+def flatten_yfinance_columns(data):
+    """Flatten single-symbol download columns across yfinance response formats."""
+    if isinstance(data.columns, pd.MultiIndex):
+        data = data.copy()
+        data.columns = data.columns.get_level_values(0)
+    return data
+
+
 def get_stock_data(symbol, period="1d", interval=None):
     """Fetch stock data from Yahoo Finance."""
     try:

@@ -19,9 +19,8 @@ except Exception:
     layers = None
     HAS_TF = False
 import yfinance as yf
-import os
 
-from Stock.backend.stockinfo import align_plot_series
+from Stock.backend.stockinfo import align_plot_series, flatten_yfinance_columns
 
 sns.set()
 if HAS_TF:
@@ -40,20 +39,26 @@ def predict_stock(symbol, period, sim, future):
     simulation_size = sim
     test_size = future
 
-    df = yf.download(symbol, period=period, interval="1d")
+    df = yf.download(symbol, period=period, interval="1d", progress=False)
     if df is None or df.empty:
         raise ValueError(
             "Market data is temporarily unavailable for this stock and period. Please try again."
         )
-    df.reset_index(inplace=True)
-    df.to_csv("data.csv")
-    df = pd.read_csv("data.csv")
-    df = df.iloc[1:].drop(columns="Price")
-    minmax = MinMaxScaler()
-    if "Close" not in df or df["Close"].dropna().empty:
+    df = flatten_yfinance_columns(df).reset_index()
+    date_column = df.columns[0]
+    if "Close" not in df:
         raise ValueError(
             "Market data is temporarily unavailable for this stock and period. Please try again."
         )
+    df = df[[date_column, "Close"]].dropna(subset=["Close"]).copy()
+    df[date_column] = pd.to_datetime(df[date_column]).dt.strftime("%Y-%m-%d")
+    df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
+    df = df.dropna(subset=["Close"]).reset_index(drop=True)
+    if df.empty:
+        raise ValueError(
+            "Market data is temporarily unavailable for this stock and period. Please try again."
+        )
+    minmax = MinMaxScaler()
     df_log = minmax.fit_transform(df[["Close"]])
     df_log = pd.DataFrame(df_log, columns=["Close"])
 
@@ -119,10 +124,6 @@ def predict_stock(symbol, period, sim, future):
         ax.set_facecolor("white")
         plt.xticks([])
         plt.autoscale(enable=True, axis="both", tight=None)
-        try:
-            os.remove("data.csv")
-        except Exception:
-            pass
         html = mpld3.fig_to_html(plt.gcf())
         plt.close()
         return html
@@ -281,7 +282,6 @@ def predict_stock(symbol, period, sim, future):
     ax.set_facecolor("white")
     plt.xticks([])
     plt.autoscale(enable=True, axis="both", tight=None)
-    os.remove("data.csv")
     html = mpld3.fig_to_html(plt.gcf())
     plt.close()
     return html
