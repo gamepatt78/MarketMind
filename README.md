@@ -5,12 +5,11 @@ a simulated trading strategy behaves. **MarketMind** is a Django web app for
 learning and experimentation; it does not place real trades or provide
 investment advice.
 
-**Live demo:** <https://marketmind-1-iqy8.onrender.com/>
+**Live site:** <https://marketmind-1-iqy8.onrender.com/>
 
-The demo runs on Render's free service and may take a little time to wake up
-after inactivity. It is for demonstration only; its SQLite database is not
-persistent, so accounts and other database data can be lost when the service
-is replaced or restarted.
+The site is hosted on Render. The free service may take a little time to wake
+up after inactivity. Its SQLite database is not persistent, so accounts and
+other database data can be lost when the service is replaced or restarted.
 
 ## At a glance
 
@@ -21,8 +20,8 @@ is replaced or restarted.
 | Markets in the symbol list | US and India |
 | Forecast methods | LSTM when TensorFlow is available; Monte Carlo fallback otherwise |
 | Charting | Matplotlib and `mpld3` |
-| Database | SQLite (ephemeral in the hosted demo) |
-| Hosted demo | [marketmind-1-iqy8.onrender.com](https://marketmind-1-iqy8.onrender.com/) |
+| Database | SQLite (ephemeral on the hosted service) |
+| Live site | [marketmind-1-iqy8.onrender.com](https://marketmind-1-iqy8.onrender.com/) |
 | Live trading | Not supported |
 
 ## Screenshots
@@ -108,8 +107,8 @@ a brokerage connection, or guarantee that results would repeat.
 - Login checks the username and password against Django's user database.
 - Email OTP and email-based password-reset flows are not enabled. Forgotten
   passwords require an administrator reset.
-- The hosted demo uses an ephemeral SQLite file. It is suitable for trying the
-  application, not for keeping accounts or data permanently.
+- The hosted service uses an ephemeral SQLite file. Accounts and database
+  records are not guaranteed to persist through restarts or redeployments.
 
 ## Run locally
 
@@ -119,9 +118,8 @@ a brokerage connection, or guarantee that results would repeat.
 - Python with `pip`
 - Network access to retrieve market data
 
-The current development setup uses Python 3.12 and Django 5.2 LTS. This
-repository is a development prototype; review and test the framework and
-dependencies before using it in a public deployment.
+The current development setup uses Python 3.12 and Django 5.2 LTS. Review and
+test framework and dependency updates before deploying.
 
 ### 1. Clone the project
 
@@ -202,7 +200,7 @@ listens on `PORT` if it is set, otherwise on port 8000.
 
 ## Deploy on Render
 
-The live demo is deployed from this GitHub repository using Render's Docker
+The live site is deployed from this GitHub repository using Render's Docker
 runtime. To create or update the service:
 
 1. Push the changes to GitHub:
@@ -247,7 +245,7 @@ when adding another hostname or deploying on another platform.
 4. Django serves the pages and APIs. Market data is fetched on demand from
    Yahoo Finance; it is not included in the deployment image.
 
-### Render demo limitations
+### Hosting notes
 
 - The free service may spin down while idle, so the first request after a
   period of inactivity can be slow.
@@ -255,9 +253,8 @@ when adding another hostname or deploying on another platform.
   is ephemeral, and the free plan does not support persistent disks. Accounts
   and database records may be lost when the service restarts or is redeployed.
 - The Docker command currently uses Django's built-in development server.
-  This deployment is a demo, not a production-ready hosting configuration.
-  Before relying on it for real users or important data, switch to a production
-  WSGI server and persistent database, and review the security settings.
+  For a production deployment, use a production WSGI server and persistent
+  database, and review the security settings.
 - The app does not trade, connect to a broker, or guarantee forecast or
   simulation results.
 
@@ -317,9 +314,8 @@ python manage.py test Stock
 
 ## Security and deployment notes
 
-`DEBUG` is off by default, but this is still a prototype and the current
-container starts Django's built-in development server. Before a production
-deployment:
+`DEBUG` is off by default, but the current container starts Django's built-in
+development server. Before a production deployment:
 
 - set a unique, private `DJANGO_SECRET_KEY`;
 - use a production WSGI/ASGI server and a persistent database;
