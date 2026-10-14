@@ -142,6 +142,9 @@ class DirectRegistrationTests(TestCase):
         self.assertContains(response, 'method="post"')
         self.assertContains(response, "Create account")
         self.assertNotContains(response, "verification code")
+        self.assertEqual(response.content.decode().count('class="auth-password-toggle"'), 2)
+        self.assertContains(response, 'aria-controls="password"')
+        self.assertContains(response, 'aria-controls="password-confirm"')
 
     def test_registration_saves_user_and_contacts_in_sqlite_without_email_service(self):
         response = self.client.post("/register", self.registration_data())
