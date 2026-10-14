@@ -237,6 +237,7 @@ class DirectRegistrationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'href="/password/forgot"')
         self.assertContains(response, "Forgot password?")
+        self.assertContains(response, 'aria-controls="login-password"')
 
     def test_password_reset_page_uses_root_relative_favicon(self):
         response = self.client.get("/password/forgot")

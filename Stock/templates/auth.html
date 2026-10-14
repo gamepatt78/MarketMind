@@ -107,8 +107,18 @@
             autocomplete="username" placeholder="Enter your username" required autofocus>
 
           <label for="login-password">Password</label>
-          <input class="auth-input" id="login-password" name="password" type="password"
-            autocomplete="current-password" placeholder="Enter your password" required>
+          <div class="auth-password-field">
+            <input class="auth-input" id="login-password" name="password" type="password"
+              autocomplete="current-password" placeholder="Enter your password" required>
+            <button class="auth-password-toggle" type="button" aria-label="Show password"
+              aria-controls="login-password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+                <path class="auth-password-slash" d="M4 4l16 16"></path>
+              </svg>
+            </button>
+          </div>
           <p class="auth-forgot"><a href="{% url 'password_reset' %}">Forgot password?</a></p>
           <button class="auth-primary" type="submit">Log in</button>
         </form>
@@ -120,7 +130,7 @@
 </main>
 {% endblock %}
 {% block script %}
-  {% if mode == "register" %}
+  {% if mode == "register" or mode == "login" %}
     <script>
       document.querySelectorAll(".auth-password-toggle").forEach((passwordToggle) => {
         const passwordInput = document.getElementById(passwordToggle.getAttribute("aria-controls"));
